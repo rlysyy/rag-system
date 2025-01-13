@@ -16,18 +16,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       authorize: async (credentials) => {
         let user = null
- 
-        // // 模拟用户验证
-        // if (credentials.email === 'test@test.com' && credentials.password === 'password') {
-        //   user = { id: '1', name: 'Test User', email: 'test@test.com' }
-        // }
-        // if (!user) {
-        //   // No user found, so this is their first attempt to login
-        //   // Optionally, this is also the place you could do a user registration
-        //   throw new Error("Invalid credentials.")
-        // }
-        // // return user object with their profile data
-        // return user
 
          if (!credentials?.email || !credentials?.password) {
           throw new Error('请输入邮箱和密码')
