@@ -10,6 +10,8 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { testData } from './test-data'
+import { testDataNg } from './test-data-ng'
+import StackedChart from '@/components/data/StackedChart'
 
 // 定义行类型
 type TableRowData = {
@@ -18,7 +20,7 @@ type TableRowData = {
 };
 
 export default function DataPage() {
-  // 按日期分组并合并“结批”任务
+  // 按日期分组并合并"结批"任务
   const groupedData = testData.reduce((acc, item) => {
     const date = item.productdate.split('-').slice(1).join('-') // 转换为 12-01 格式
     if (!acc[date]) acc[date] = []
@@ -140,30 +142,41 @@ export default function DataPage() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">任务数据展示</h1>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-center w-[80px]">
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="text-center">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      
+      {/* 堆积图 */}
+      <div className="mb-8 overflow-x-auto" style={{ width: `${dates.length * 96 + 65}px` }}>
+        <div style={{ width: `${dates.length * 96 + 65}px` }}> {/* 动态宽度，每个日期占 80px */}
+          <StackedChart data={testDataNg} />
+        </div>
+      </div>
+
+      {/* 表格 */}
+      <div style={{ width: `${dates.length * 96}px`, marginLeft: '63px' }}> {/* 动态宽度，左侧留白 63px */}
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="text-center" style={{ width: '80px' }}> {/* 每列宽度 80px */}
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="text-center" style={{ width: '80px' }}> {/* 每列宽度 80px */}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
