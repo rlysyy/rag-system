@@ -12,6 +12,14 @@ const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00C49F']; // 预�
 const StackedChart = ({ data }: { data: ChartDataItem[] }) => {
   const [chartDataArray, setChartDataArray] = useState<Array<{ date: string } & Record<string, number>>>([]);
   const [ngids, setNgids] = useState<string[]>([]);
+  const [hiddenNgids, setHiddenNgids] = useState<string[]>([]); // 新增：存储隐藏的 ngid
+
+  // 处理 Legend 点击事件
+  const handleLegendClick = (ngid: string) => {
+    setHiddenNgids((prev) =>
+      prev.includes(ngid) ? prev.filter((id) => id !== ngid) : [...prev, ngid]
+    );
+  };
 
   useEffect(() => {
     // 转换数据格式
@@ -39,34 +47,42 @@ const StackedChart = ({ data }: { data: ChartDataItem[] }) => {
   }
 
   return (
-    <BarChart
-      width={chartDataArray.length * 98} // 动态宽度，每个日期占 98px
-      height={400}
-      data={chartDataArray}
-      margin={{ top: 5, right: 0, left: 0, bottom: 5 }} // 减少边距
-    >
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis 
-        dataKey="date" 
-        interval={0} // 显示所有日期
-        tick={{ fontSize: 14 }} // 调整字体大小
-      />
-      <YAxis />
-      <Tooltip />
-      <Legend 
-        wrapperStyle={{ paddingBottom: 20 }} // 添加底部 padding
-        verticalAlign="top" // 将 Legend 放在顶部
-      />
-      {ngids.map((ngid, index) => (
-        <Bar 
-          key={ngid} 
-          dataKey={ngid} 
-          stackId="a" 
-          fill={colors[index % colors.length]} // 使用固定颜色
-          barSize={65}
+    <div>
+      <h2 className="text-xl font-bold mb-6 text-center text-primary">
+        小停机统计
+      </h2>
+      
+      <BarChart
+        width={chartDataArray.length * 98}
+        height={400}
+        data={chartDataArray}
+        margin={{ top: 20, right: 0, left: 0, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis 
+          dataKey="date" 
+          interval={0}
+          tick={{ fontSize: 14 }}
         />
-      ))}
-    </BarChart>
+        <YAxis />
+        <Tooltip />
+        <Legend 
+          wrapperStyle={{ paddingBottom: 20 }}
+          verticalAlign="top"
+          onClick={(e) => handleLegendClick(e.value)} // 添加点击事件
+        />
+        {ngids.map((ngid, index) => (
+          <Bar 
+            key={ngid} 
+            dataKey={ngid} 
+            stackId="a" 
+            fill={colors[index % colors.length]}
+            barSize={60}
+            hide={hiddenNgids.includes(ngid)} // 控制显示/隐藏
+          />
+        ))}
+      </BarChart>
+    </div>
   );
 };
 
