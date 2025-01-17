@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { testData } from '@/app/data/test-data'; // 导入原始数据
+import { testData } from '@/lib/mockData/test-data'; // 导入原始数据
 
 type TableRowData = {
   task_text: string;
@@ -139,13 +139,23 @@ export function Factory4MTable() {
   });
 
   return (
-    <div style={{ width: `${dates.length * 96}px`, marginLeft: '63px' }}>
+    <div 
+      style={{ 
+        width: `${dates.length * 96}px`, 
+        marginLeft: '63px',
+        overflow: 'hidden' // 隐藏滚动条
+      }}
+    >
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-center" style={{ width: '80px' }}>
+                <TableHead 
+                  key={header.id} 
+                  className="text-center"
+                  style={{ width: '80px' }}
+                >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
@@ -156,7 +166,11 @@ export function Factory4MTable() {
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="text-center" style={{ width: '80px' }}>
+                <TableCell 
+                  key={cell.id} 
+                  className="text-center"
+                  style={{ width: '80px' }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}

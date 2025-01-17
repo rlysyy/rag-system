@@ -88,6 +88,9 @@ body {
       --chart-3: 197 37% 24%;
       --chart-4: 43 74% 66%;
       --chart-5: 27 87% 67%;
+      --font-noto-sans: 'Noto Sans';
+      --font-noto-sans-sc: 'Noto Sans SC';
+      --font-noto-sans-jp: 'Noto Sans JP';
     }
   
     .dark {

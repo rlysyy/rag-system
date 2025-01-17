@@ -1,31 +1,69 @@
 'use client'
 
-import StackedChart from '@/components/data/StackedChart'
 import { Factory4MTable } from '@/components/data/Factory4MTable'
-import { testData } from './test-data'; // 导入原始数据
-import { testDataNg } from './test-data-ng';
+import MicroStopStack from '@/components/data/MicroStopStack';
+import DefectRateStackChart from '@/components/data/DefectRateStackChart';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 export default function DataPage() {
-  // 获取所有日期
-  const dates = Object.keys(testData.reduce((acc, item) => {
-    const date = item.productdate.split('-').slice(1).join('-');
-    acc[date] = true;
-    return acc;
-  }, {} as Record<string, boolean>));
+  const [isTableOpen, setIsTableOpen] = useState(true);
+  const [isMicroStopOpen, setIsMicroStopOpen] = useState(true);
+  const [isDefectRateOpen, setIsDefectRateOpen] = useState(true);
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <div className="min-w-[600px]">   
-        {/* 堆积图 */}
-        <div className="mb-8 overflow-x-auto" style={{ width: `${dates.length * 96 + 65}px` }}>
-          <div style={{ width: `${dates.length * 96 + 65}px` }}>
-            <StackedChart data={testDataNg} />
+      <div className="min-w-[1800px]">
+        {/* 小停机堆积图 */}
+        <section>
+          <button 
+            className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
+            onClick={() => setIsMicroStopOpen(!isMicroStopOpen)}
+            type="button"
+          >
+            {isMicroStopOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            <span className="ml-1">小停机堆积图</span>
+          </button>
+          <div className={`${isMicroStopOpen ? 'block' : 'hidden'}`}>
+            <MicroStopStack />
           </div>
-        </div>
+        </section>
 
         {/* 表格 */}
-        <Factory4MTable />
+        <section>
+          <button 
+            className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
+            onClick={() => setIsTableOpen(!isTableOpen)}
+            type="button"
+          >
+            {isTableOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            <span className="ml-1">数据表格</span>
+          </button>
+          <div className={`${isTableOpen ? 'block' : 'hidden'}`}>
+            <Factory4MTable />
+          </div>
+        </section>
+
+        {/* 不良率堆积图 */}
+        <section>
+          <button 
+            className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
+            onClick={() => setIsDefectRateOpen(!isDefectRateOpen)}
+            type="button"
+          >
+            {isDefectRateOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            <span className="ml-1">不良率堆积图</span>
+          </button>
+          <div className={`${isDefectRateOpen ? 'block' : 'hidden'}`}>
+            <DefectRateStackChart />
+          </div>
+        </section>
       </div>
     </div>
-  )
+  );
 }
