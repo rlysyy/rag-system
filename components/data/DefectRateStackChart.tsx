@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { testDataDefectRate } from '@/lib/mockData/test-data-defectRate';
+import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts';
+import { testDataDefectRate, dailyDefectRates } from '@/lib/mockData/test-data-defectRate';
 import { generateChartColors } from '@/lib/utils/colors';
 
 interface ChartDataItem {
@@ -28,12 +28,16 @@ const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth 
     const groupedData = testDataDefectRate.reduce((acc: Record<string, ChartDataItem>, curr) => {
       const date = curr.dttime.split('-').slice(1).join('-');
       if (!acc[date]) {
-        acc[date] = { date };
+        acc[date] = { 
+          date,
+          total_defect_rate: dailyDefectRates[curr.dttime] || 0
+        };
       }
       acc[date][curr.ngid] = (Number(acc[date][curr.ngid]) || 0) + curr.count;
       return acc;
     }, {});
 
+    console.log('Chart Data:', Object.values(groupedData));
     setChartData(Object.values(groupedData));
     const types = [...new Set(testDataDefectRate.map(item => item.ngid))] as string[];
     setErrorTypes(types);
@@ -72,7 +76,7 @@ const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth 
   return (
     <div className="w-full h-full">
       <ResponsiveContainer width={chartWidth} height="100%">
-        <BarChart
+        <ComposedChart
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
@@ -81,8 +85,24 @@ const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth 
             dataKey="date" 
             fontSize={14}
           />
-          <YAxis fontSize={14}/>
-          <Tooltip />
+          <YAxis yAxisId="left" />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right"
+            tickFormatter={(value) => `${value}%`}
+          />
+          <Tooltip 
+            formatter={(value: any, name: string) => {
+              if (name === '不良率') {
+                return [`${value}%`, name];
+              }
+              return [value, name];
+            }}
+            itemSorter={(item) => {
+              if (item.name === '不良率') return -1;  // 不良率排在最前
+              return 0;
+            }}
+          />
           <Legend 
             onClick={({ id = '' }) => handleLegendClick(id)}
             wrapperStyle={{ 
@@ -113,17 +133,27 @@ const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth 
             stackId="a"
             fill="#8884d8"
             hide={true}
+            yAxisId="left"
           />
           {errorTypes.map((type, index) => (
             <Bar
               key={`bar-${type}-${index}`}
               dataKey={type}
               stackId="a"
+              yAxisId="left"
               fill={generateChartColors(errorTypes.length)[index]}
               hide={hiddenBars[type]}
             />
           ))}
-        </BarChart>
+          <Line
+            type="monotone"
+            dataKey="total_defect_rate"
+            stroke="#d32f2f"
+            yAxisId="right"
+            name="不良率"
+            dot={{ fill: '#d32f2f' }}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
