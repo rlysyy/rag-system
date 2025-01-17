@@ -149,7 +149,7 @@ export function Factory4MTable() {
     <div 
       style={{ 
         width: `${dates.length * 96}px`, 
-        marginLeft: '63px',
+        marginLeft: '80px',
         overflow: 'hidden' // 隐藏滚动条
       }}
     >

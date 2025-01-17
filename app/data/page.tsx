@@ -20,7 +20,7 @@ export default function DataPage() {
   }, {} as Record<string, boolean>));
 
   // 计算图表宽度
-  const chartWidth = dates.length * 96 + 65;
+  const chartWidth = dates.length * 97 +75;
 
   const handleToggle = useCallback((setter: (value: boolean) => void, currentValue: boolean) => {
     requestAnimationFrame(() => {
@@ -49,7 +49,7 @@ export default function DataPage() {
             }}
           >
             <div className="h-[400px]">
-              <MicroStopStack />
+              <MicroStopStack chartWidth={chartWidth} />
             </div>
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function DataPage() {
             }}
           >
             <div className="h-[400px]">
-              <DefectRateStackChart />
+              <DefectRateStackChart chartWidth={chartWidth} />
             </div>
           </div>
         </div>

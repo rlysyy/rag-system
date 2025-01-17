@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { testDataDefectRate } from '@/lib/mockData/test-data-defectRate';
 import { generateChartColors } from '@/lib/utils/colors';
-import { CustomLegend } from './CustomLegend';
 
 interface ChartDataItem {
   date: string;
@@ -15,7 +14,11 @@ interface DefectRateItem {
   defect_rate: number;
 }
 
-const DefectRateStackChart = () => {
+interface DefectRateStackChartProps {
+  chartWidth: number;
+}
+
+const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth }) => {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
@@ -68,14 +71,17 @@ const DefectRateStackChart = () => {
 
   return (
     <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width={chartWidth} height="100%">
         <BarChart
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
+          <XAxis 
+            dataKey="date" 
+            fontSize={14}
+          />
+          <YAxis fontSize={14}/>
           <Tooltip />
           <Legend 
             onClick={({ id = '' }) => handleLegendClick(id)}

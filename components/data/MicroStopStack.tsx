@@ -8,7 +8,11 @@ interface ChartDataItem {
   [key: string]: number | string;
 }
 
-const MicroStopStack = () => {
+interface MicroStopStackProps {
+  chartWidth: number;
+}
+
+const MicroStopStack: React.FC<MicroStopStackProps> = ({ chartWidth }) => {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
@@ -59,20 +63,19 @@ const MicroStopStack = () => {
     }
   }, [errorTypes, hiddenBars]);
 
-  const calculateWidth = () => {
-    return `${chartData.length * 80 + 70}px`;
-  };
-
   return (
     <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width={chartWidth} height="100%">
         <BarChart
           data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
+          <XAxis 
+            dataKey="date" 
+            fontSize={14}
+          />
+          <YAxis fontSize={14} />
           <Tooltip />
           <Legend 
             onClick={({ id = '' }) => handleLegendClick(id)}
