@@ -1,4 +1,4 @@
-export const testDataNg = [
+export const testDataDefectRate = [
     { count: 18.0, ngid: '鉄片铆接不良', mcid: 11.0, lineid: 16.0, dttime: '2024-12-01' },
     { count: 6.0, ngid: 'A接点铆接不良_表', mcid: 11.0, lineid: 16.0, dttime: '2024-12-01' },
     { count: 5.0, ngid: '鉄芯铆接不良', mcid: 11.0, lineid: 16.0, dttime: '2024-12-01' },

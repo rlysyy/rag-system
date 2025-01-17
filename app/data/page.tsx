@@ -4,7 +4,7 @@ import { Factory4MTable } from '@/components/data/Factory4MTable'
 import { testData } from '../../lib/mockData/test-data';
 import MicroStopStack from '@/components/data/MicroStopStack';
 import DefectRateStackChart from '@/components/data/DefectRateStackChart';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function DataPage() {
@@ -22,54 +22,81 @@ export default function DataPage() {
   // 计算图表宽度
   const chartWidth = dates.length * 96 + 65;
 
+  const handleToggle = useCallback((setter: (value: boolean) => void, currentValue: boolean) => {
+    requestAnimationFrame(() => {
+      setter(!currentValue);
+    });
+  }, []);
+
   return (
     <div className="h-full overflow-y-auto p-4">
-      <div className="min-w-[400px]">   
+      <div className="min-w-[400px] space-y-4">   
         {/* 小停机堆积图 */}
-        <div className="mb-4">
+        <div>
           <button 
             className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
-            onClick={() => setIsMicroStopVisible(!isMicroStopVisible)}
-            type="button"
+            onClick={() => handleToggle(setIsMicroStopVisible, isMicroStopVisible)}
           >
             {isMicroStopVisible ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             <span className="ml-1">小停机堆积图</span>
           </button>
-          <div className={`transition-all duration-300 ${isMicroStopVisible ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'}`}
-               style={{ width: `${chartWidth}px` }}>
-            <MicroStopStack />
+          <div 
+            className={`transition-all duration-300 ease-in-out overflow-hidden`}
+            style={{
+              width: `${chartWidth}px`,
+              height: isMicroStopVisible ? '400px' : '0',
+              opacity: isMicroStopVisible ? 1 : 0
+            }}
+          >
+            <div className="h-[400px]">
+              <MicroStopStack />
+            </div>
           </div>
         </div>
 
         {/* 表格 */}
-        <div className="mb-4">
+        <div>
           <button 
             className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
-            onClick={() => setIsTableVisible(!isTableVisible)}
-            type="button"
+            onClick={() => handleToggle(setIsTableVisible, isTableVisible)}
           >
             {isTableVisible ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             <span className="ml-1">数据表格</span>
           </button>
-          <div className={`transition-all duration-300 ${isTableVisible ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'}`}
-               style={{ width: `${chartWidth}px` }}>
-            <Factory4MTable />
+          <div 
+            className={`transition-all duration-300 ease-in-out overflow-hidden`}
+            style={{
+              width: `${chartWidth}px`,
+              height: isTableVisible ? '400px' : '0',
+              opacity: isTableVisible ? 1 : 0
+            }}
+          >
+            <div className="h-[400px]">
+              <Factory4MTable />
+            </div>
           </div>
         </div>
 
         {/* 不良率堆积图 */}
-        <div className="mb-4">
+        <div>
           <button 
             className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
-            onClick={() => setIsDefectRateVisible(!isDefectRateVisible)}
-            type="button"
+            onClick={() => handleToggle(setIsDefectRateVisible, isDefectRateVisible)}
           >
             {isDefectRateVisible ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             <span className="ml-1">不良率堆积图</span>
           </button>
-          <div className={`transition-all duration-300 ${isDefectRateVisible ? 'h-[400px] opacity-100' : 'h-0 opacity-0 overflow-hidden'}`}
-               style={{ width: `${chartWidth}px` }}>
-            <DefectRateStackChart />
+          <div 
+            className={`transition-all duration-300 ease-in-out overflow-hidden`}
+            style={{
+              width: `${chartWidth}px`,
+              height: isDefectRateVisible ? '400px' : '0',
+              opacity: isDefectRateVisible ? 1 : 0
+            }}
+          >
+            <div className="h-[400px]">
+              <DefectRateStackChart />
+            </div>
           </div>
         </div>
       </div>

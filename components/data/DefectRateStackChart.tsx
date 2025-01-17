@@ -1,171 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { testDataNg } from '@/lib/mockData/test-data-ng';
-import { generateChartColors } from '@/lib/utils/colors'; // 导入颜色工具函数
-import { Props as LegendProps, Payload } from 'recharts/types/component/DefaultLegendContent';
+import { testDataDefectRate } from '@/lib/mockData/test-data-defectRate';
+import { generateChartColors } from '@/lib/utils/colors';
+import { CustomLegend } from './CustomLegend';
+
+interface ChartDataItem {
+  date: string;
+  [key: string]: number | string;
+}
+
+interface DefectRateItem {
+  dttime: string;
+  errid: string;
+  defect_rate: number;
+}
 
 const DefectRateStackChart = () => {
-  const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
-  const [isAllSelected, setIsAllSelected] = useState(true); // 全选状态
+  const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
+  const [isAllSelected, setIsAllSelected] = useState(true);
 
-  // 处理 Legend 单击事件
-  const handleLegendClick = (entry: { dataKey: string }) => {
-    const { dataKey } = entry;
-
-    // 如果是全选/全不选 Legend
-    if (dataKey === 'all') {
-      const newHiddenBars = isAllSelected
-        ? errorTypes.reduce((acc, type) => ({ ...acc, [type]: true }), {})
-        : {};
-      setHiddenBars(newHiddenBars);
-      setIsAllSelected(!isAllSelected);
-    } else {
-      // 普通 Legend 点击
-      setHiddenBars((prevHiddenBars) => ({
-        ...prevHiddenBars,
-        [dataKey]: !prevHiddenBars[dataKey]
-      }));
-    }
-  };
-
-  // 数据获取逻辑
   useEffect(() => {
-    const fetchData = () => {
-      const groupedData = testDataNg.reduce((acc: Record<string, any>, curr) => {
-        // 确保 dttime 存在且是字符串
-        if (!curr.dttime || typeof curr.dttime !== 'string') {
-          console.warn('Invalid dttime:', curr.dttime);
-          return acc;
-        }
+    const groupedData = testDataDefectRate.reduce((acc: Record<string, ChartDataItem>, curr) => {
+      const date = curr.dttime.split('-').slice(1).join('-');
+      if (!acc[date]) {
+        acc[date] = { date };
+      }
+      acc[date][curr.ngid] = (Number(acc[date][curr.ngid]) || 0) + curr.count;
+      return acc;
+    }, {});
 
-        const originalDate = curr.dttime;
-        const formattedDate = originalDate.split('-').slice(1).join('-'); // 格式化为 "MM-DD"
-        if (!acc[formattedDate]) {
-          acc[formattedDate] = { date: formattedDate };
-        }
-        acc[formattedDate][curr.ngid] = (acc[formattedDate][curr.ngid] || 0) + curr.count;
-        return acc;
-      }, {});
-
-      setChartData(Object.values(groupedData));
-      setErrorTypes([...new Set(testDataNg.map((item) => item.ngid))]); // 使用 ngid 作为不良类型
-    };
-
-    fetchData();
+    setChartData(Object.values(groupedData));
+    const types = [...new Set(testDataDefectRate.map(item => item.ngid))] as string[];
+    setErrorTypes(types);
+    
+    const initialHiddenBars: Record<string, boolean> = {};
+    types.forEach(type => {
+      initialHiddenBars[type] = false;
+    });
+    setHiddenBars(initialHiddenBars);
   }, []);
 
-  // 使用封装的颜色工具函数
-  const colors = generateChartColors(errorTypes.length);
-
-  // 自定义 Legend 内容
-  const renderLegend = (props: LegendProps) => {
-    const { payload = [] } = props;
-
-    return (
-      <div style={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
-        gap: '8px', 
-        paddingTop: '20px',
-        marginBottom: '20px',
-        fontFamily: 'var(--font-noto-sans), var(--font-noto-sans-sc), var(--font-noto-sans-jp), sans-serif',
-        fontSize: '14px' // 显式设置字体大小
-      }}>
-        {/* 全选/全不选 Legend */}
-        <div
-          style={{ 
-            cursor: 'pointer', 
-            color: isAllSelected ? '#000' : '#888',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-          onClick={() => handleLegendClick({ dataKey: 'all' })}
-        >
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              backgroundColor: isAllSelected ? '#1f77b4' : '#888',
-              borderRadius: '2px'
-            }}
-          />
-          {isAllSelected ? '全不选' : '全选'}
-        </div>
-
-        {/* 普通 Legend */}
-        {payload.map((entry: Payload, index: number) => (
-          <div
-            key={`item-${index}`}
-            style={{ 
-              cursor: 'pointer', 
-              color: hiddenBars[entry.dataKey as string] ? '#888' : '#000',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-            onClick={() => handleLegendClick({ dataKey: entry.dataKey as string })}
-          >
-            <div
-              style={{
-                width: '12px',
-                height: '12px',
-                backgroundColor: hiddenBars[entry.dataKey as string] ? '#888' : entry.color,
-                borderRadius: '2px'
-              }}
-            />
-            {entry.value}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // 添加宽度计算函数
-  const calculateWidth = () => {
-    return `${chartData.length * 95 + 100}px`;
-  };
+  const handleLegendClick = useCallback((dataKey: string) => {
+    if (dataKey === 'all') {
+      const newHiddenBars: Record<string, boolean> = {};
+      const shouldShow = errorTypes.some(type => hiddenBars[type]);
+      
+      errorTypes.forEach(type => {
+        newHiddenBars[type] = !shouldShow;
+      });
+      
+      setHiddenBars(newHiddenBars);
+      setIsAllSelected(shouldShow);
+    } else {
+      setHiddenBars(prev => {
+        const newHiddenBars = { ...prev };
+        newHiddenBars[dataKey] = !prev[dataKey];
+        
+        const allHidden = errorTypes.every(type => newHiddenBars[type]);
+        setIsAllSelected(!allHidden);
+        
+        return newHiddenBars;
+      });
+    }
+  }, [errorTypes, hiddenBars]);
 
   return (
-    <div 
-      className="h-[400px] relative"
-      style={{ width: calculateWidth() }}
-    >
+    <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart 
+        <BarChart
           data={chartData}
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 14 }}
-            interval={0}
-            padding={{ left: 0, right: 0 }}
-          />
+          <XAxis dataKey="date" />
           <YAxis />
           <Tooltip />
           <Legend 
-            content={renderLegend}
+            onClick={({ id = '' }) => handleLegendClick(id)}
             wrapperStyle={{ 
-              maxWidth: '100%',
-              overflow: 'hidden',
-              maxHeight: '150px',
-              paddingTop: '20px',
-              marginBottom: '20px'
+              left: 0, 
+              paddingTop: '10px',
+              fontFamily: 'Noto Sans SC, Noto Sans JP',
+              fontSize: '12px'
             }}
-            verticalAlign="top"
+            iconType="circle"
+            iconSize={10}
+            payload={[
+              { 
+                value: errorTypes.some(type => hiddenBars[type]) ? '全选' : '取消全选', 
+                type: 'circle' as const, 
+                id: 'all',
+                color: '#8884d8'
+              },
+              ...errorTypes.map((type, index) => ({
+                value: type,
+                type: 'circle' as const,
+                color: generateChartColors(errorTypes.length)[index],
+                id: type
+              }))
+            ]}
+          />
+          <Bar
+            dataKey="all"
+            stackId="a"
+            fill="#8884d8"
+            hide={true}
           />
           {errorTypes.map((type, index) => (
             <Bar
-              key={type}
+              key={`bar-${type}-${index}`}
               dataKey={type}
               stackId="a"
-              fill={colors[index]}
-              barSize={60}
+              fill={generateChartColors(errorTypes.length)[index]}
               hide={hiddenBars[type]}
-              isAnimationActive={false}
             />
           ))}
         </BarChart>
