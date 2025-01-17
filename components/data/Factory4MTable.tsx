@@ -101,11 +101,18 @@ export function Factory4MTable() {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="whitespace-nowrap overflow-hidden text-ellipsis w-[80px] cursor-pointer" style={{ minWidth: '80px', maxWidth: '80px' }}>
+                <div 
+                  className="whitespace-nowrap overflow-hidden text-ellipsis w-[80px] cursor-pointer" 
+                  style={{ minWidth: '80px', maxWidth: '80px' }}
+                >
                   {displayText}
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="bg-opacity-90 bg-gray-800 text-white">
+              <TooltipContent 
+                className="bg-gray-800 text-white bg-opacity-90"
+                side="top"
+                sideOffset={5}
+              >
                 <p>{taskText}</p>
               </TooltipContent>
             </Tooltip>

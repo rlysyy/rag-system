@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { testDataNg } from '@/lib/mockData/test-data-ng';
 import { generateChartColors } from '@/lib/utils/colors'; // 导入颜色工具函数
+import { Props as LegendProps, Payload } from 'recharts/types/component/DefaultLegendContent';
 
 const DefectRateStackChart = () => {
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
@@ -59,8 +60,8 @@ const DefectRateStackChart = () => {
   const colors = generateChartColors(errorTypes.length);
 
   // 自定义 Legend 内容
-  const renderLegend = (props: { payload: { dataKey: string; color: string }[] }) => {
-    const { payload } = props;
+  const renderLegend = (props: LegendProps) => {
+    const { payload = [] } = props;
 
     return (
       <div style={{ 
@@ -95,27 +96,27 @@ const DefectRateStackChart = () => {
         </div>
 
         {/* 普通 Legend */}
-        {payload.map((entry: { dataKey: string; color: string }, index: number) => (
+        {payload.map((entry: Payload, index: number) => (
           <div
             key={`item-${index}`}
             style={{ 
               cursor: 'pointer', 
-              color: hiddenBars[entry.dataKey] ? '#888' : '#000',
+              color: hiddenBars[entry.dataKey as string] ? '#888' : '#000',
               display: 'flex',
               alignItems: 'center',
               gap: '4px'
             }}
-            onClick={() => handleLegendClick(entry)}
+            onClick={() => handleLegendClick({ dataKey: entry.dataKey as string })}
           >
             <div
               style={{
                 width: '12px',
                 height: '12px',
-                backgroundColor: hiddenBars[entry.dataKey] ? '#888' : entry.color,
+                backgroundColor: hiddenBars[entry.dataKey as string] ? '#888' : entry.color,
                 borderRadius: '2px'
               }}
             />
-            {entry.dataKey} {/* 显示 ngid */}
+            {entry.value}
           </div>
         ))}
       </div>
@@ -164,6 +165,7 @@ const DefectRateStackChart = () => {
               fill={colors[index]}
               barSize={60}
               hide={hiddenBars[type]}
+              isAnimationActive={false}
             />
           ))}
         </BarChart>

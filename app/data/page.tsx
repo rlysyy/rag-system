@@ -18,51 +18,49 @@ export default function DataPage() {
 
   return (
     <div className="h-full overflow-y-auto p-4">
-      <div className="min-w-[1800px]">
+      <div className="space-y-4">   
         {/* 小停机堆积图 */}
-        <section>
-          <button 
-            className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
-            onClick={() => setIsMicroStopOpen(!isMicroStopOpen)}
-            type="button"
-          >
-            {isMicroStopOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            <span className="ml-1">小停机堆积图</span>
-          </button>
-          <div className={`${isMicroStopOpen ? 'block' : 'hidden'}`}>
-            <MicroStopStack />
-          </div>
-        </section>
+        <Collapsible open={isMicroStopOpen} onOpenChange={setIsMicroStopOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center w-full text-left cursor-pointer mb-2 select-none">
+              {isMicroStopOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              <span className="ml-1">小停机堆积图</span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              <MicroStopStack />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* 表格 */}
-        <section>
-          <button 
-            className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
-            onClick={() => setIsTableOpen(!isTableOpen)}
-            type="button"
-          >
-            {isTableOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            <span className="ml-1">数据表格</span>
-          </button>
-          <div className={`${isTableOpen ? 'block' : 'hidden'}`}>
+        <Collapsible open={isTableOpen} onOpenChange={setIsTableOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center w-full text-left cursor-pointer mb-2 select-none">
+              {isTableOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              <span className="ml-1">数据表格</span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
             <Factory4MTable />
-          </div>
-        </section>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* 不良率堆积图 */}
-        <section>
-          <button 
-            className="flex items-center w-full text-left cursor-pointer mb-2 select-none"
-            onClick={() => setIsDefectRateOpen(!isDefectRateOpen)}
-            type="button"
-          >
-            {isDefectRateOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            <span className="ml-1">不良率堆积图</span>
-          </button>
-          <div className={`${isDefectRateOpen ? 'block' : 'hidden'}`}>
-            <DefectRateStackChart />
-          </div>
-        </section>
+        <Collapsible open={isDefectRateOpen} onOpenChange={setIsDefectRateOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center w-full text-left cursor-pointer mb-2 select-none">
+              {isDefectRateOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              <span className="ml-1">不良率堆积图</span>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              <DefectRateStackChart />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );

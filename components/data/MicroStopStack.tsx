@@ -179,8 +179,9 @@ const MicroStopStack = (): ReactNode => {
               dataKey={type}
               stackId="a"
               fill={colors[index]}
-              barSize={60}  // 设置柱子宽度为 80px，留出一些间距
+              barSize={60}
               hide={hiddenBars[type]}
+              isAnimationActive={false}
             />
           ))}
         </BarChart>
