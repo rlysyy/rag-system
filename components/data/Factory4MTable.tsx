@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   Table,
   TableBody,
@@ -138,15 +138,27 @@ export function Factory4MTable() {
     );
   }, [tableData, selectedFilters, dates]);
 
+  // 添加 ref 用于聚焦
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // 添加打开下拉菜单的处理函数
+  const handleDropdownOpen = () => {
+    // 使用 setTimeout 确保在下拉菜单完全打开后再聚焦
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
+  };
+
   if (!mounted) {
     return null; // 或者返回一个加载占位符
   }
 
   return (
-    <>
-      {/* 筛选按钮独立布局 */}
-      <div className="ml-[60px] mb-2">
-        <DropdownMenu>
+    <div className="text-xs ml-[60px]">
+      <div className="mb-4 flex justify-start">
+        <DropdownMenu onOpenChange={(open) => {
+          if (open) handleDropdownOpen();
+        }}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
               <FilterIcon className="mr-2 h-4 w-4" />
@@ -156,10 +168,12 @@ export function Factory4MTable() {
           <DropdownMenuContent align="start" className="w-[200px]">
             <div className="p-2">
               <Input
+                ref={searchInputRef}
                 placeholder="搜索..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-8"
+                onKeyDown={(e) => e.stopPropagation()}
               />
             </div>
             <div className="max-h-[300px] overflow-auto">
@@ -174,6 +188,8 @@ export function Factory4MTable() {
                         : prev.filter(item => item !== option)
                     );
                   }}
+                  onFocus={(e) => e.preventDefault()}
+                  onMouseEnter={(e) => e.preventDefault()}
                 >
                   {option}
                 </DropdownMenuCheckboxItem>
@@ -183,37 +199,34 @@ export function Factory4MTable() {
         </DropdownMenu>
       </div>
 
-      {/* 调整表格容器 */}
-      <div className="text-xs ml-[60px]">
-        <div className="min-h-[800px]">
-          <Table className="overflow-visible">
-            <TableHeader>
-              <TableRow>
+      <div className="min-h-[800px]">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {dates.map((date) => (
+                <TableHead key={date} className="text-center w-[80px]">
+                  {date.slice(5).replace('-', '-')}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredData.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
                 {dates.map((date) => (
-                  <TableHead key={date} className="text-center w-[80px]">
-                    {date.slice(5).replace('-', '-')}
-                  </TableHead>
+                  <TableCell key={date} className="text-center">
+                    {row[date] ? (() => {
+                      const [taskName, count] = row[date].split('*');
+                      const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
+                      return count ? `${displayText}*${count}` : displayText;
+                    })() : null}
+                  </TableCell>
                 ))}
               </TableRow>
-            </TableHeader>
-            <TableBody className="overflow-visible">
-              {filteredData.map((row, rowIndex) => (
-                <TableRow key={rowIndex} className="overflow-visible">
-                  {dates.map((date) => (
-                    <TableCell key={date} className="text-center overflow-visible">
-                      {row[date] ? (() => {
-                        const [taskName, count] = row[date].split('*');
-                        const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
-                        return count ? `${displayText}*${count}` : displayText;
-                      })() : null}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-    </>
+    </div>
   );
 }
