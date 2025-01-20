@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts';
+import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, BarChart } from 'recharts';
 import { testDataDefectRate, dailyDefectRates } from '@/lib/mockData/test-data-defectRate';
 import { generateChartColors } from '@/lib/utils/colors';
 
@@ -17,13 +17,12 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
 
   // 初始化数据
   useEffect(() => {
-    // 使用 reduce 将原始数据按日期分组
     const groupedData = testDataDefectRate.reduce((acc: Record<string, ChartDataItem>, curr) => {
-      const date = curr.dttime.split('-').slice(1).join('-');  // 提取月-日
+      const date = curr.dttime.split('-').slice(1).join('-');
       if (!acc[date]) {
         acc[date] = { 
           date,
-          total_defect_rate: dailyDefectRates[curr.dttime] || 0  // 添加不良率数据
+          total_defect_rate: dailyDefectRates[curr.dttime] || 0
         };
       }
       acc[date][curr.ngid] = (Number(acc[date][curr.ngid]) || 0) + curr.count;
@@ -31,11 +30,10 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
     }, {});
 
     setChartData(Object.values(groupedData));
-    // 获取所有不良类型（去重）
+    
     const types = [...new Set(testDataDefectRate.map(item => item.ngid))];
     setErrorTypes(types);
     
-    // 初始化显示状态（默认全部显示）
     const initialHiddenBars: Record<string, boolean> = {};
     types.forEach(type => {
       initialHiddenBars[type] = false;
@@ -65,26 +63,30 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
 
   return (
     <div className="w-full h-full">
-      <ResponsiveContainer width={chartWidth} height="100%">
+      <ResponsiveContainer width={chartWidth + 40} height="100%">
         <ComposedChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          margin={{ top: 20, right: 45, left: 0, bottom: 5 }}
+          barSize={60}
         >
-          {/* 网格线 */}
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="date" 
             fontSize={14}
+            interval={0}
+            padding={{ left: 0, right: 0 }}
           />
-          {/* 左侧Y轴：不良数量 */}
-          <YAxis yAxisId="left" />
-          {/* 右侧Y轴：不良率（百分比） */}
+          <YAxis 
+            yAxisId="left"
+            fontSize={14}
+          />
           <YAxis 
             yAxisId="right" 
             orientation="right"
             tickFormatter={(value) => `${value}%`}
+            fontSize={14}
+            width={40}
           />
-          {/* 提示框配置 */}
           <Tooltip 
             formatter={(value: any, name: string) => {
               if (name === '不良率') {
@@ -92,12 +94,7 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
               }
               return [value, name];
             }}
-            itemSorter={(item) => {
-              if (item.name === '不良率') return -999;  // 不良率始终在最上方
-              return -Number(item.value || 0);          // 其他按数值降序
-            }}
           />
-          {/* 图例配置 */}
           <Legend 
             onClick={({ id = '' }) => handleLegendClick(id)}
             wrapperStyle={{ 
@@ -109,14 +106,12 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
             iconType="circle"
             iconSize={10}
             payload={[
-              // 全选/取消全选按钮
               { 
                 value: errorTypes.some(type => hiddenBars[type]) ? '全选' : '取消全选', 
                 type: 'circle' as const, 
                 id: 'all',
                 color: '#8884d8'
               },
-              // 各不良类型的图例
               ...errorTypes.map((type, index) => ({
                 value: type,
                 type: 'circle' as const,
@@ -125,15 +120,6 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
               }))
             ]}
           />
-          {/* 隐藏的全选Bar */}
-          <Bar
-            dataKey="all"
-            stackId="a"
-            fill="#8884d8"
-            hide={true}
-            yAxisId="left"
-          />
-          {/* 各不良类型的堆叠柱状图 */}
           {errorTypes.map((type, index) => (
             <Bar
               key={`bar-${type}-${index}`}
@@ -144,7 +130,6 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
               hide={hiddenBars[type]}
             />
           ))}
-          {/* 不良率曲线 */}
           <Line
             type="monotone"
             dataKey="total_defect_rate"
@@ -152,6 +137,7 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
             yAxisId="right"
             name="不良率"
             dot={{ fill: '#d32f2f' }}
+            strokeWidth={2}
           />
         </ComposedChart>
       </ResponsiveContainer>

@@ -1,7 +1,9 @@
 'use client'
 
 import { Factory4MTable } from '@/components/data/Factory4MTable'
-import { testData } from '../../lib/mockData/test-data';
+import { testData } from '@/lib/mockData/test-data';
+import { testDataDefectRate } from '@/lib/mockData/test-data-defectRate';
+import { testDataMicroStops } from '@/lib/mockData/test-data-microStops';
 import { MicroStopStackChart } from '@/components/data/MicroStopStackChart';
 import { DefectRateStackChart } from '@/components/data/DefectRateStackChart';
 import { useState, useCallback } from 'react';
@@ -12,15 +14,19 @@ export default function DataPage() {
   const [isMicroStopVisible, setIsMicroStopVisible] = useState(true);
   const [isDefectRateVisible, setIsDefectRateVisible] = useState(true);
 
-  // 获取所有日期
+  // 获取所有日期并排序
   const dates = Object.keys(testData.reduce((acc, item) => {
     const date = item.productdate.split('-').slice(1).join('-');
     acc[date] = true;
     return acc;
-  }, {} as Record<string, boolean>));
+  }, {} as Record<string, boolean>)).sort();
 
-  // 计算图表宽度
-  const chartWidth = dates.length * 97 + 65;
+  // 修改图表宽度计算方式
+  const barWidth = 60;  // 每个柱子的宽度
+  const barGap = 37;    // 柱子之间的间隔
+  const marginLeft = 40;  // 左边距
+  const marginRight = 45; // 右边距
+  const chartWidth = dates.length * (barWidth + barGap) + marginLeft + marginRight;
 
   // 切换图表显示状态
   const handleToggle = useCallback((setter: (value: boolean) => void, currentValue: boolean) => {
@@ -31,7 +37,7 @@ export default function DataPage() {
 
   return (
     <div className="h-full overflow-y-auto p-4 bg-gray-50">
-      <div className="min-w-[400px] space-y-6 overflow-x-auto">
+      <div className="min-w-[400px] space-y-6 overflow-x-auto pb-2">
         {/* 小停机堆积图 */}
         <div className="rounded-lg border shadow-sm bg-white" style={{ width: `${chartWidth}px` }}>
           <button 

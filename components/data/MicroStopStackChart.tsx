@@ -24,6 +24,7 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
     }, {});
 
     setChartData(Object.values(groupedData));
+    
     const types = [...new Set(testDataMicroStops.map(item => item.errid))];
     setErrorTypes(types);
     
@@ -35,17 +36,13 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
   }, []);
 
   const handleLegendClick = useCallback((dataKey: string) => {
-    // 如果点击的是"全选"按钮
     if (dataKey === 'all') {
       const newHiddenBars: Record<string, boolean> = {};
-      // 检查是否有任何类型被隐藏
       const shouldShow = errorTypes.some(type => hiddenBars[type]);
-      // 根据当前状态，全部显示或全部隐藏
       errorTypes.forEach(type => {
         newHiddenBars[type] = !shouldShow;
       });
       setHiddenBars(newHiddenBars);
-    // 如果点击的是具体的错误类型
     } else {
       setHiddenBars(prev => {
         const newHiddenBars = { ...prev };
@@ -56,24 +53,26 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
   }, [errorTypes, hiddenBars]);
 
   return (
-    // 占满父容器
     <div className="w-full h-full">
       <ResponsiveContainer width={chartWidth} height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          margin={{ top: 20, right: 45, left: 0, bottom: 5 }}
           barSize={60}
+          barGap={0}
+          barCategoryGap="20%"
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="date" 
             fontSize={14}
+            interval={0}
+            padding={{ left: 0, right: 0 }}
           />
           <YAxis fontSize={14} />
           <Tooltip 
             formatter={(value: any, name: string) => [value, name]}
             itemSorter={(item) => {
-              // 按数值从大到小排序，返回负值表示降序
               return -Number(item.value || 0);
             }}
           />
