@@ -20,7 +20,7 @@ export default function DataPage() {
   }, {} as Record<string, boolean>));
 
   // 计算图表宽度
-  const chartWidth = dates.length * 97 +75;
+  const chartWidth = dates.length * 97 +65;
 
   const handleToggle = useCallback((setter: (value: boolean) => void, currentValue: boolean) => {
     requestAnimationFrame(() => {

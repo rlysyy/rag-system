@@ -35,13 +35,17 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
   }, []);
 
   const handleLegendClick = useCallback((dataKey: string) => {
+    // 如果点击的是"全选"按钮
     if (dataKey === 'all') {
       const newHiddenBars: Record<string, boolean> = {};
+      // 检查是否有任何类型被隐藏
       const shouldShow = errorTypes.some(type => hiddenBars[type]);
+      // 根据当前状态，全部显示或全部隐藏
       errorTypes.forEach(type => {
         newHiddenBars[type] = !shouldShow;
       });
       setHiddenBars(newHiddenBars);
+    // 如果点击的是具体的错误类型
     } else {
       setHiddenBars(prev => {
         const newHiddenBars = { ...prev };
@@ -52,11 +56,13 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
   }, [errorTypes, hiddenBars]);
 
   return (
+    // 占满父容器
     <div className="w-full h-full">
       <ResponsiveContainer width={chartWidth} height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          barSize={60}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
@@ -64,7 +70,13 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
             fontSize={14}
           />
           <YAxis fontSize={14} />
-          <Tooltip />
+          <Tooltip 
+            formatter={(value: any, name: string) => [value, name]}
+            itemSorter={(item) => {
+              // 按数值从大到小排序，返回负值表示降序
+              return -Number(item.value || 0);
+            }}
+          />
           <Legend 
             onClick={({ id = '' }) => handleLegendClick(id)}
             wrapperStyle={{ 

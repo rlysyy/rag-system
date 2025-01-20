@@ -59,7 +59,8 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
       <ResponsiveContainer width={chartWidth} height="100%">
         <ComposedChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          barSize={60}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
@@ -80,8 +81,8 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
               return [value, name];
             }}
             itemSorter={(item) => {
-              if (item.name === '不良率') return -1;
-              return 0;
+              if (item.name === '不良率') return 1;
+              return -Number(item.value || 0);
             }}
           />
           <Legend 

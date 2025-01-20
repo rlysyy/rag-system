@@ -200,7 +200,11 @@ export function Factory4MTable() {
             <TableHeader>
               <TableRow className="overflow-visible">
                 {dates.map((date) => (
-                  <TableHead key={date} className="text-center w-[80px] overflow-visible">
+                  <TableHead 
+                    key={date} 
+                    className="text-center overflow-visible"
+                    style={{ width: '80px', minWidth: '80px' }}
+                  >
                     {date.slice(5).replace('-', '-')}
                   </TableHead>
                 ))}
@@ -210,7 +214,11 @@ export function Factory4MTable() {
               {filteredData.map((row, rowIndex) => (
                 <TableRow key={rowIndex} className="overflow-visible">
                   {dates.map((date) => (
-                    <TableCell key={date} className="text-center overflow-visible">
+                    <TableCell 
+                      key={date} 
+                      className="text-center overflow-visible"
+                      style={{ width: '80px', minWidth: '80px' }}
+                    >
                       {row[date] ? (() => {
                         const [taskName, count] = row[date].split('*');
                         const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
