@@ -12,7 +12,7 @@ interface MicroStopStackProps {
   chartWidth: number;
 }
 
-const MicroStopStack: React.FC<MicroStopStackProps> = ({ chartWidth }) => {
+export function MicroStopStack({ chartWidth }: MicroStopStackProps) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
@@ -121,6 +121,6 @@ const MicroStopStack: React.FC<MicroStopStackProps> = ({ chartWidth }) => {
       </ResponsiveContainer>
     </div>
   );
-};
+}
 
 export default MicroStopStack;

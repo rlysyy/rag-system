@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts';
 import { testDataDefectRate, dailyDefectRates } from '@/lib/mockData/test-data-defectRate';
 import { generateChartColors } from '@/lib/utils/colors';
@@ -18,7 +18,7 @@ interface DefectRateStackChartProps {
   chartWidth: number;
 }
 
-const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth }) => {
+export function DefectRateStackChart({ chartWidth }: DefectRateStackChartProps) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
@@ -99,7 +99,7 @@ const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth 
               return [value, name];
             }}
             itemSorter={(item) => {
-              if (item.name === '不良率') return -1;  // 不良率排在最前
+              if (item.name === '不良率') return -1;
               return 0;
             }}
           />
@@ -157,6 +157,4 @@ const DefectRateStackChart: React.FC<DefectRateStackChartProps> = ({ chartWidth 
       </ResponsiveContainer>
     </div>
   );
-};
-
-export default DefectRateStackChart; 
+} 

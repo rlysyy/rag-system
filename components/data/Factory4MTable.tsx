@@ -23,7 +23,9 @@ import { useState as useStateImport } from "react";
 
 export function Factory4MTable() {
   const [mounted, setMounted] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -98,8 +100,6 @@ export function Factory4MTable() {
     [groupedData]
   );
 
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-
   // 过滤选项
   const filteredOptions = useMemo(() => 
     filterOptions.filter(option => 
@@ -138,16 +138,11 @@ export function Factory4MTable() {
     );
   }, [tableData, selectedFilters, dates]);
 
-  // 添加 ref 用于聚焦
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // 添加打开下拉菜单的处理函数
-  const handleDropdownOpen = () => {
-    // 使用 setTimeout 确保在下拉菜单完全打开后再聚焦
+  function handleDropdownOpen() {
     setTimeout(() => {
       searchInputRef.current?.focus();
     }, 0);
-  };
+  }
 
   if (!mounted) {
     return null; // 或者返回一个加载占位符
