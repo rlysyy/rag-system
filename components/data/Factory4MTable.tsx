@@ -1,190 +1,219 @@
+'use client';
+
+import { useMemo, useState, useEffect } from 'react';
 import {
-  flexRender,
-  getCoreRowModel,
-  createColumnHelper,
-  useReactTable,
-} from '@tanstack/react-table';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { testData } from '@/lib/mockData/test-data'; // 导入原始数据
-
-type TableRowData = {
-  task_text: string;
-  task_stop_id: number;
-  task_count: number;
-  total_task_duration: number;
-  productdate: string;
-  [key: string]: string | number; // 允许其他动态字段
-};
-
-interface DataTableProps {
-  groupedData: Record<string, TableRowData[]>;
-  dates: string[];
-  maxTasks: number;
-}
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import { FilterIcon } from "lucide-react";
+import { testData } from '@/lib/mockData/test-data';
+import { Input } from "@/components/ui/input";
+import { useState as useStateImport } from "react";
 
 export function Factory4MTable() {
-  // 按日期分组并合并"结批"任务
-  const groupedData = testData.reduce((acc, item) => {
-    const date = item.productdate.split('-').slice(1).join('-'); // 转换为 12-01 格式
-    if (!acc[date]) acc[date] = [];
+  const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-    // 提取任务基础文本（去掉 *数字 部分）
-    const baseTaskText = item.task_text.split('*')[0];
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    // 如果包含 "结批"，则直接作为结批任务处理
-    if (baseTaskText.includes('结批')) {
-      const existingTaskIndex = acc[date].findIndex(task => task.task_text.includes('结批'));
-      if (existingTaskIndex !== -1) {
-        // 如果已有结批任务，统计所有结批任务的数量
-        const sameTasks = testData.filter(task => 
-          task.productdate.split('-').slice(1).join('-') === date && 
-          task.task_text.includes('结批')
-        );
-        const count = sameTasks.length; // 直接统计总数
-        acc[date][existingTaskIndex].task_text = `结批*${count}`;
-      } else {
-        // 如果没有结批任务，直接添加
-        acc[date].push({ ...item, task_text: '结批*1' });
+  // 按日期分组数据并合并结批任务
+  const { groupedData, dates } = useMemo(() => {
+    const grouped: Record<string, typeof testData> = {};
+    const dateSet = new Set<string>();
+
+    testData.forEach(item => {
+      const date = item.productdate;
+      dateSet.add(date);
+      if (!grouped[date]) {
+        grouped[date] = [];
       }
-      return acc;
-    }
 
-    // 查找是否已有相同任务
-    const existingTaskIndex = acc[date].findIndex(task => {
-      const taskBaseText = task.task_text.split('*')[0]
-      return taskBaseText === baseTaskText && !taskBaseText.includes('结批')
-    });
-    
-    if (existingTaskIndex !== -1) {
-      // 如果已有相同任务，统计所有相同任务的数量
-      const sameTasks = testData.filter(task => 
-        task.productdate.split('-').slice(1).join('-') === date && 
-        task.task_text.split('*')[0] === baseTaskText
-      );
-      const count = sameTasks.length; // 直接统计总数
-
-      // 更新任务文本为 *数字 格式
-      acc[date][existingTaskIndex].task_text = `${baseTaskText}*${count}`;
-    } else {
-      // 如果没有相同任务，直接添加
-      acc[date].push(item);
-    }
-    return acc;
-  }, {} as Record<string, typeof testData>);
-
-  // 获取所有日期
-  const dates = Object.keys(groupedData);
-
-  // 获取最大任务数
-  const maxTasks = Math.max(...Object.values(groupedData).map((tasks) => tasks.length));
-
-  // 定义列
-  const columnHelper = createColumnHelper<TableRowData>();
-  const columns = dates.map((date) =>
-    columnHelper.accessor((row) => row[date], {
-      header: date,
-      cell: (info) => {
-        const taskText = info.getValue();
-        let displayText = taskText;
-
-        if (typeof taskText === 'string') {
-          if (taskText.includes('*')) {
-            const [taskName, count] = taskText.split('*');
-            displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...*${count}` : `${taskName}*${count}`;
-          } else if (taskText.length > 4) {
-            displayText = `${taskText.slice(0, 4)}...`;
-          }
+      // 合并结批任务
+      if (item.task_text.includes('结批')) {
+        const existingBatchItem = grouped[date].find(x => x.task_text.includes('结批'));
+        if (existingBatchItem) {
+          existingBatchItem.task_count += item.task_count;
+          return; // 重要：如果合并了就不要继续添加
         }
+        // 如果是第一个结批任务，将文本统一为"结批"
+        item = { ...item, task_text: '结批' };
+      }
+      
+      grouped[date].push(item);
+    });
 
-        return (
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div 
-                  className="whitespace-nowrap overflow-hidden text-ellipsis w-[80px] cursor-pointer" 
-                  style={{ minWidth: '80px', maxWidth: '80px' }}
-                >
-                  {displayText}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent 
-                className="bg-gray-800 text-white bg-opacity-90"
-                side="top"
-                sideOffset={5}
-              >
-                <p>{taskText}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      },
-    })
+    return {
+      groupedData: grouped,
+      dates: Array.from(dateSet).sort()
+    };
+  }, []);
+
+  // 生成表格数据时保持计数显示
+  const tableData = useMemo(() => {
+    if (!groupedData || Object.keys(groupedData).length === 0) return [];
+    const maxTasks = Math.max(...Object.values(groupedData).map(tasks => tasks.length));
+    
+    return Array.from({ length: maxTasks }).map((_, index) => {
+      const row: { [key: string]: string } = {};
+      dates.forEach((date) => {
+        const tasks = groupedData[date] || [];
+        const task = tasks[index];
+        if (task) {
+          const count = task.task_count > 1 ? `*${task.task_count}` : '';
+          row[date] = `${task.task_text}${count}`;
+        } else {
+          row[date] = '';
+        }
+      });
+      return row;
+    });
+  }, [dates, groupedData]);
+
+  // 筛选选项
+  const filterOptions = useMemo(() => 
+    Array.from(new Set(
+      Object.values(groupedData)
+        .flat()
+        .map(item => {
+          if (item.task_text.includes('结批')) {
+            return '结批';
+          }
+          return item.task_text;
+        })
+        .filter(Boolean)
+    )).sort(),
+    [groupedData]
   );
 
-  // 转换数据格式
-  const tableData = Array.from({ length: maxTasks }).map((_, index) => {
-    const row: TableRowData = {
-      task_text: '',
-      task_stop_id: 0,
-      task_count: 0,
-      total_task_duration: 0,
-      productdate: '',
-    };
-    dates.forEach((date) => {
-      const task = groupedData[date][index];
-      row[date] = task ? task.task_text : '';
-    });
-    return row;
-  });
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
-  // 创建表格实例
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  // 过滤选项
+  const filteredOptions = useMemo(() => 
+    filterOptions.filter(option => 
+      option.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [filterOptions, searchQuery]
+  );
+
+  // 筛选数据 - 使用 useMemo 优化性能
+  const filteredData = useMemo(() => {
+    if (selectedFilters.length === 0) return tableData;
+    
+    return tableData.map(record => {
+      const newRow: { [key: string]: string } = {};
+      
+      dates.forEach(date => {
+        const cellValue = record[date];
+        if (cellValue) {
+          const taskName = cellValue.split('*')[0];
+          if (selectedFilters.some(filter => {
+            if (filter === '结批') {
+              return taskName.includes('结批');
+            }
+            return taskName === filter;
+          })) {
+            newRow[date] = cellValue;
+          } else {
+            newRow[date] = '';
+          }
+        }
+      });
+      
+      return newRow;
+    }).filter(row => 
+      Object.values(row).some(value => value.length > 0)
+    );
+  }, [tableData, selectedFilters, dates]);
+
+  if (!mounted) {
+    return null; // 或者返回一个加载占位符
+  }
 
   return (
-    <div 
-      style={{ 
-        width: `${dates.length * 96}px`, 
-        marginLeft: '80px',
-        overflow: 'hidden' // 隐藏滚动条
-      }}
-    >
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead 
-                  key={header.id} 
-                  className="text-center"
-                  style={{ width: '80px' }}
+    <>
+      {/* 筛选按钮独立布局 */}
+      <div className="ml-[60px] mb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <FilterIcon className="mr-2 h-4 w-4" />
+              筛选 {selectedFilters.length > 0 && `(${selectedFilters.length})`}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[200px]">
+            <div className="p-2">
+              <Input
+                placeholder="搜索..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <div className="max-h-[300px] overflow-auto">
+              {filteredOptions.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option}
+                  checked={selectedFilters.includes(option)}
+                  onCheckedChange={(checked) => {
+                    setSelectedFilters(prev =>
+                      checked
+                        ? [...prev, option]
+                        : prev.filter(item => item !== option)
+                    );
+                  }}
                 >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
+                  {option}
+                </DropdownMenuCheckboxItem>
               ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell 
-                  key={cell.id} 
-                  className="text-center"
-                  style={{ width: '80px' }}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* 调整表格容器 */}
+      <div className="text-xs ml-[60px]">
+        <div className="min-h-[800px]">
+          <Table className="overflow-visible">
+            <TableHeader>
+              <TableRow>
+                {dates.map((date) => (
+                  <TableHead key={date} className="text-center w-[80px]">
+                    {date.slice(5).replace('-', '-')}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody className="overflow-visible">
+              {filteredData.map((row, rowIndex) => (
+                <TableRow key={rowIndex} className="overflow-visible">
+                  {dates.map((date) => (
+                    <TableCell key={date} className="text-center overflow-visible">
+                      {row[date] ? (() => {
+                        const [taskName, count] = row[date].split('*');
+                        const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
+                        return count ? `${displayText}*${count}` : displayText;
+                      })() : null}
+                    </TableCell>
+                  ))}
+                </TableRow>
               ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </>
   );
 }
