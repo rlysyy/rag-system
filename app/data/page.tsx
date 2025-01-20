@@ -21,12 +21,9 @@ export default function DataPage() {
     return acc;
   }, {} as Record<string, boolean>)).sort();
 
-  // 修改图表宽度计算方式
-  const barWidth = 60;  // 每个柱子的宽度
-  const barGap = 37;    // 柱子之间的间隔
-  const marginLeft = 40;  // 左边距
-  const marginRight = 45; // 右边距
-  const chartWidth = dates.length * (barWidth + barGap) + marginLeft + marginRight;
+  // 分别计算图表和表格的宽度
+  const chartWidth = dates.length * 98 + 75;  // 图表宽度保持原样
+  const tableWidth = dates.length * 96 + 65;       // 表格宽度使用固定列宽计算
 
   // 切换图表显示状态
   const handleToggle = useCallback((setter: (value: boolean) => void, currentValue: boolean) => {

@@ -195,54 +195,85 @@ export function Factory4MTable() {
       </div>
 
       <div className="text-xs ml-[60px]">
-        <div className="min-h-[800px] overflow-visible">
-          <Table className="overflow-visible">
-            <TableHeader>
-              <TableRow className="overflow-visible">
+        <div 
+          className="min-h-[800px] overflow-visible"
+          style={{
+            width: `${dates.length * 96}px`,
+            maxWidth: `${dates.length * 96}px`
+          }}
+        >
+          <div className="w-full overflow-visible">
+            <Table className="w-full border-collapse table-fixed relative">
+              <colgroup>
                 {dates.map((date) => (
-                  <TableHead 
-                    key={date} 
-                    className="text-center overflow-visible"
-                    style={{ width: '80px', minWidth: '80px' }}
-                  >
-                    {date.slice(5).replace('-', '-')}
-                  </TableHead>
+                  <col key={date} style={{ width: '80px' }} />
                 ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="overflow-visible">
-              {filteredData.map((row, rowIndex) => (
-                <TableRow key={rowIndex} className="overflow-visible">
+              </colgroup>
+              <TableHeader>
+                <TableRow>
                   {dates.map((date) => (
-                    <TableCell 
+                    <TableHead 
                       key={date} 
-                      className="text-center overflow-visible group relative"
-                      style={{ width: '80px', minWidth: '80px' }}
+                      className="text-center overflow-visible box-border h-10 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+                      style={{ 
+                        width: '80px',
+                        padding: '8px'
+                      }}
                     >
-                      {row[date] ? (() => {
-                        const [taskName, count] = row[date].split('*');
-                        const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
-                        const fullText = count ? `${taskName}*${count}` : taskName;
-                        
-                        return (
-                          <div className="relative">
-                            <span>{count ? `${displayText}*${count}` : displayText}</span>
-                            {/* 悬停提示 */}
-                            {taskName.length > 4 && (
-                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
-                                            bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-50">
-                                {fullText}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })() : null}
-                    </TableCell>
+                      {date.slice(5).replace('-', '-')}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredData.map((row, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {dates.map((date) => (
+                      <TableCell 
+                        key={date} 
+                        className="text-center overflow-visible group relative box-border align-middle"
+                        style={{ 
+                          width: '80px',
+                          padding: '8px'
+                        }}
+                      >
+                        <div className="relative group/tooltip">
+                          <span>{row[date] ? (() => {
+                            const [taskName, count] = row[date].split('*');
+                            const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
+                            return count ? `${displayText}*${count}` : displayText;
+                          })() : null}</span>
+                          {row[date] && row[date].split('*')[0].length > 4 && (
+                            <div className="absolute hidden group-hover/tooltip:block z-[100]"
+                                 style={{
+                                   backgroundColor: 'rgb(31, 41, 55)',
+                                   color: 'white',
+                                   padding: '4px 8px',
+                                   borderRadius: '4px',
+                                   fontSize: '12px',
+                                   whiteSpace: 'nowrap',
+                                   bottom: '100%',
+                                   marginBottom: '4px',
+                                   ...(dates.indexOf(date) === 0 
+                                     ? { left: '0' }  // 最左侧列
+                                     : dates.indexOf(date) === dates.length - 1
+                                     ? { right: '0' }  // 最右侧列
+                                     : { left: '50%', transform: 'translateX(-50%)' }  // 中间列
+                                   )
+                                 }}
+                            >
+                              {row[date]}
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </>
