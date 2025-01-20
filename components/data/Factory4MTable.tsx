@@ -149,8 +149,8 @@ export function Factory4MTable() {
   }
 
   return (
-    <div className="text-xs ml-[60px]">
-      <div className="mb-4 flex justify-start">
+    <>
+      <div className="ml-[60px] mb-2">
         <DropdownMenu onOpenChange={(open) => {
           if (open) handleDropdownOpen();
         }}>
@@ -194,34 +194,36 @@ export function Factory4MTable() {
         </DropdownMenu>
       </div>
 
-      <div className="min-h-[800px]">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {dates.map((date) => (
-                <TableHead key={date} className="text-center w-[80px]">
-                  {date.slice(5).replace('-', '-')}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredData.map((row, rowIndex) => (
-              <TableRow key={rowIndex}>
+      <div className="text-xs ml-[60px]">
+        <div className="min-h-[800px] overflow-visible">
+          <Table className="overflow-visible">
+            <TableHeader>
+              <TableRow className="overflow-visible">
                 {dates.map((date) => (
-                  <TableCell key={date} className="text-center">
-                    {row[date] ? (() => {
-                      const [taskName, count] = row[date].split('*');
-                      const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
-                      return count ? `${displayText}*${count}` : displayText;
-                    })() : null}
-                  </TableCell>
+                  <TableHead key={date} className="text-center w-[80px] overflow-visible">
+                    {date.slice(5).replace('-', '-')}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody className="overflow-visible">
+              {filteredData.map((row, rowIndex) => (
+                <TableRow key={rowIndex} className="overflow-visible">
+                  {dates.map((date) => (
+                    <TableCell key={date} className="text-center overflow-visible">
+                      {row[date] ? (() => {
+                        const [taskName, count] = row[date].split('*');
+                        const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
+                        return count ? `${displayText}*${count}` : displayText;
+                      })() : null}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

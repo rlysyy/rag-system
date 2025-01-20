@@ -12,7 +12,6 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
-  const [isAllSelected, setIsAllSelected] = useState(true);
 
   useEffect(() => {
     const groupedData = testDataDefectRate.reduce((acc: Record<string, ChartDataItem>, curr) => {
@@ -27,9 +26,8 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
       return acc;
     }, {});
 
-    console.log('Chart Data:', Object.values(groupedData));
     setChartData(Object.values(groupedData));
-    const types = [...new Set(testDataDefectRate.map(item => item.ngid))] as string[];
+    const types = [...new Set(testDataDefectRate.map(item => item.ngid))];
     setErrorTypes(types);
     
     const initialHiddenBars: Record<string, boolean> = {};
@@ -43,21 +41,14 @@ export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
     if (dataKey === 'all') {
       const newHiddenBars: Record<string, boolean> = {};
       const shouldShow = errorTypes.some(type => hiddenBars[type]);
-      
       errorTypes.forEach(type => {
         newHiddenBars[type] = !shouldShow;
       });
-      
       setHiddenBars(newHiddenBars);
-      setIsAllSelected(shouldShow);
     } else {
       setHiddenBars(prev => {
         const newHiddenBars = { ...prev };
         newHiddenBars[dataKey] = !prev[dataKey];
-        
-        const allHidden = errorTypes.every(type => newHiddenBars[type]);
-        setIsAllSelected(!allHidden);
-        
         return newHiddenBars;
       });
     }

@@ -12,7 +12,6 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
-  const [isAllSelected, setIsAllSelected] = useState(true);
 
   useEffect(() => {
     const groupedData = testDataMicroStops.reduce((acc: Record<string, ChartDataItem>, curr) => {
@@ -39,21 +38,14 @@ export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
     if (dataKey === 'all') {
       const newHiddenBars: Record<string, boolean> = {};
       const shouldShow = errorTypes.some(type => hiddenBars[type]);
-      
       errorTypes.forEach(type => {
         newHiddenBars[type] = !shouldShow;
       });
-      
       setHiddenBars(newHiddenBars);
-      setIsAllSelected(shouldShow);
     } else {
       setHiddenBars(prev => {
         const newHiddenBars = { ...prev };
         newHiddenBars[dataKey] = !prev[dataKey];
-        
-        const allHidden = errorTypes.every(type => newHiddenBars[type]);
-        setIsAllSelected(!allHidden);
-        
         return newHiddenBars;
       });
     }
