@@ -212,7 +212,7 @@ export function Factory4MTable() {
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="start" 
-            className="w-[350px]"
+            className="w-[300px]"
             onClick={(e) => e.stopPropagation()}
             style={{ 
               zIndex: 1000,
@@ -236,19 +236,13 @@ export function Factory4MTable() {
                 placeholder="搜索..."
                 value={searchQuery}
                 onChange={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
                   setSearchQuery(e.target.value);
                 }}
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
                 }}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Tab') {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }
+                  e.stopPropagation();
                 }}
                 className="w-full"
               />
