@@ -216,13 +216,26 @@ export function Factory4MTable() {
                   {dates.map((date) => (
                     <TableCell 
                       key={date} 
-                      className="text-center overflow-visible"
+                      className="text-center overflow-visible group relative"
                       style={{ width: '80px', minWidth: '80px' }}
                     >
                       {row[date] ? (() => {
                         const [taskName, count] = row[date].split('*');
                         const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
-                        return count ? `${displayText}*${count}` : displayText;
+                        const fullText = count ? `${taskName}*${count}` : taskName;
+                        
+                        return (
+                          <div className="relative">
+                            <span>{count ? `${displayText}*${count}` : displayText}</span>
+                            {/* 悬停提示 */}
+                            {taskName.length > 4 && (
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block 
+                                            bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-50">
+                                {fullText}
+                              </div>
+                            )}
+                          </div>
+                        );
                       })() : null}
                     </TableCell>
                   ))}
