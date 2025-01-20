@@ -8,17 +8,23 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import bcrypt from 'bcryptjs'
 
+interface SignUpFormData {
+  username: string;
+  password: string;
+  // ... 其他字段
+}
+
 export default function SignUpForm() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setIsLoading(true)
     setError(null)
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(event.currentTarget)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const name = formData.get('name') as string

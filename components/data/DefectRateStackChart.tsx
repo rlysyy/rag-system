@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, BarChart } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { testDataDefectRate, dailyDefectRates } from '@/lib/mockData/test-data-defectRate';
 import { generateChartColors } from '@/lib/utils/colors';
 
@@ -9,7 +9,23 @@ interface ChartDataItem {
   [key: string]: number | string;  // 动态键值对，用于存储不同类型的不良数量
 }
 
-export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
+// 定义具体类型替代 any
+type ChartDataType = {
+  name: string;
+  value: number;
+  // 添加其他需要的字段
+};
+
+// 使用定义的类型
+const data: ChartDataType[] = [
+  // ... 你的数据
+];
+
+interface ChartProps {
+  chartWidth: number;  // 添加回 chartWidth
+}
+
+export function DefectRateStackChart({ chartWidth }: ChartProps) {
   // 状态管理
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);  // 图表数据
   const [errorTypes, setErrorTypes] = useState<string[]>([]);        // 不良类型列表

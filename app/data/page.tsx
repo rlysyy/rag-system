@@ -2,8 +2,6 @@
 
 import { Factory4MTable } from '@/components/data/Factory4MTable'
 import { testData } from '@/lib/mockData/test-data';
-import { testDataDefectRate } from '@/lib/mockData/test-data-defectRate';
-import { testDataMicroStops } from '@/lib/mockData/test-data-microStops';
 import { MicroStopStackChart } from '@/components/data/MicroStopStackChart';
 import { DefectRateStackChart } from '@/components/data/DefectRateStackChart';
 import { useState, useCallback } from 'react';
@@ -23,7 +21,6 @@ export default function DataPage() {
 
   // 分别计算图表和表格的宽度
   const chartWidth = dates.length * 98 + 75;  // 图表宽度保持原样
-  const tableWidth = dates.length * 96 + 65;       // 表格宽度使用固定列宽计算
 
   // 切换图表显示状态
   const handleToggle = useCallback((setter: (value: boolean) => void, currentValue: boolean) => {
@@ -34,7 +31,7 @@ export default function DataPage() {
 
   return (
     <div className="h-full overflow-y-auto p-4 bg-gray-50">
-      <div className="min-w-[400px] space-y-6 overflow-x-auto pb-2">
+      <div className="min-w-[400px] space-y-2 overflow-x-auto pb-2">
         {/* 小停机堆积图 */}
         <div className="rounded-lg border shadow-sm bg-white" style={{ width: `${chartWidth}px` }}>
           <button 

@@ -3,12 +3,16 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { testDataMicroStops } from '@/lib/mockData/test-data-microStops';
 import { generateChartColors } from '@/lib/utils/colors';
 
+interface ChartProps {
+  chartWidth: number;
+}
+
 interface ChartDataItem {
   date: string;
   [key: string]: number | string;
 }
 
-export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
+export function MicroStopStackChart({ chartWidth }: ChartProps) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});

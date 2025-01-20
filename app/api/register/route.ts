@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     // 确保请求体是 JSON 格式
-    if (!request.headers.get('content-type')?.includes('application/json')) {
+    if (!req.headers.get('content-type')?.includes('application/json')) {
       return NextResponse.json(
         { message: '请求头 Content-Type 必须为 application/json' },
         { status: 400 }
@@ -14,10 +14,10 @@ export async function POST(request: Request) {
     }
 
     // 读取并解析请求体
-    const requestBody = await request.text() // 先以文本形式读取请求体
-    console.log('Raw request body:', requestBody) // 打印原始请求体
+    const data = await req.json()
+    console.log('Raw request body:', data) // 打印原始请求体
 
-    const { email, password, name } = JSON.parse(requestBody) // 解析 JSON
+    const { email, password, name } = data
     console.log('Parsed request body:', { email, name }) // 打印解析后的数据
 
     // 检查用户是否已存在
@@ -41,11 +41,11 @@ export async function POST(request: Request) {
       },
     })
 
-    return NextResponse.json({ message: '注册成功' }, { status: 201 })
-  } catch (err: any) { // 显式声明 err 类型为 any
-    console.error('Error during registration:', err.message || err) // 确保 err 是有效的对象
+    return NextResponse.json({ success: true, userId: user.id }, { status: 201 })
+  } catch (error: unknown) {
+    console.error('Error during registration:', error instanceof Error ? error.message : error) // 确保 err 是有效的对象
     return NextResponse.json(
-      { message: '服务器错误，请重试' },
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }
