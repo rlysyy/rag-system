@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { testDataMicroStops } from '@/lib/mockData/test-data-microStops';
 import { generateChartColors } from '@/lib/utils/colors';
@@ -8,11 +8,7 @@ interface ChartDataItem {
   [key: string]: number | string;
 }
 
-interface MicroStopStackProps {
-  chartWidth: number;
-}
-
-export function MicroStopStack({ chartWidth }: MicroStopStackProps) {
+export function MicroStopStackChart({ chartWidth }: { chartWidth: number }) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});
@@ -122,5 +118,3 @@ export function MicroStopStack({ chartWidth }: MicroStopStackProps) {
     </div>
   );
 }
-
-export default MicroStopStack;

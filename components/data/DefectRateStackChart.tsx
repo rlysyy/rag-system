@@ -8,17 +8,7 @@ interface ChartDataItem {
   [key: string]: number | string;
 }
 
-interface DefectRateItem {
-  dttime: string;
-  errid: string;
-  defect_rate: number;
-}
-
-interface DefectRateStackChartProps {
-  chartWidth: number;
-}
-
-export function DefectRateStackChart({ chartWidth }: DefectRateStackChartProps) {
+export function DefectRateStackChart({ chartWidth }: { chartWidth: number }) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [errorTypes, setErrorTypes] = useState<string[]>([]);
   const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});

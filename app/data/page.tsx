@@ -2,8 +2,8 @@
 
 import { Factory4MTable } from '@/components/data/Factory4MTable'
 import { testData } from '../../lib/mockData/test-data';
-import MicroStopStack from '@/components/data/MicroStopStack';
-import DefectRateStackChart from '@/components/data/DefectRateStackChart';
+import { MicroStopStackChart } from '@/components/data/MicroStopStackChart';
+import { DefectRateStackChart } from '@/components/data/DefectRateStackChart';
 import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -49,7 +49,7 @@ export default function DataPage() {
             }}
           >
             <div className="h-[400px]">
-              <MicroStopStack chartWidth={chartWidth} />
+              <MicroStopStackChart chartWidth={chartWidth} />
             </div>
           </div>
         </div>
