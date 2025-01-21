@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { maintenanceColors, maintenanceLegends } from "@/lib/constants/colors";
 import { TestDataMaintenance } from "@/lib/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface MaintenanceTableProps {
   data: TestDataMaintenance[];
@@ -12,6 +12,12 @@ export function MaintenanceTable({ data, unitIds }: MaintenanceTableProps) {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [showTooltip, setShowTooltip] = useState(false);
   const [activeUnitId, setActiveUnitId] = useState<number | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  // 检测是否为触摸设备
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   // 生成完整的日期范围（从12-01到12-31）
   const generateDates = () => {
@@ -62,12 +68,42 @@ export function MaintenanceTable({ data, unitIds }: MaintenanceTableProps) {
   };
 
   const handleMouseMove = (e: React.MouseEvent, unitId: number) => {
+    if (isTouchDevice) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = rect.top;
-    setTooltipPosition({ x, y });
+    setTooltipPosition({ x, y: 0 });
     setActiveUnitId(unitId);
   };
+
+  const handleRowClick = (e: React.MouseEvent | React.TouchEvent, unitId: number) => {
+    if (!isTouchDevice) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const x = clientX - rect.left;
+    setTooltipPosition({ x, y: 0 });
+    
+    if (activeUnitId === unitId) {
+      setShowTooltip(!showTooltip);
+    } else {
+      setActiveUnitId(unitId);
+      setShowTooltip(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isTouchDevice) return;
+
+    const handleClickOutside = (e: TouchEvent | MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('tr')) {
+        setShowTooltip(false);
+        setActiveUnitId(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isTouchDevice]);
 
   return (
     <>
@@ -109,10 +145,11 @@ export function MaintenanceTable({ data, unitIds }: MaintenanceTableProps) {
             {unitIds.map((unitId) => (
               <TableRow 
                 key={unitId} 
-                className="hover:bg-gray-50/50"
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
+                className={`hover:bg-gray-50/50 ${isTouchDevice ? 'cursor-pointer' : ''}`}
+                onMouseEnter={() => !isTouchDevice && setShowTooltip(true)}
+                onMouseLeave={() => !isTouchDevice && setShowTooltip(false)}
                 onMouseMove={(e) => handleMouseMove(e, unitId)}
+                onClick={(e) => handleRowClick(e, unitId)}
               >
                 {allDates.map((date) => (
                   <TableCell
@@ -136,7 +173,6 @@ export function MaintenanceTable({ data, unitIds }: MaintenanceTableProps) {
           </TableBody>
         </Table>
 
-        {/* 将 tooltip 移到表格外部 */}
         {showTooltip && activeUnitId !== null && (
           <div 
             className="absolute z-[100] pointer-events-none"
