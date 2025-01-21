@@ -110,6 +110,10 @@ export function DefectRateStackChart({ chartWidth }: ChartProps) {
               }
               return [value, name];
             }}
+            itemSorter={(item) => {
+              if (item.name === '不良率') return -999;  // 不良率始终在最上方
+              return -Number(item.value || 0);          // 其他按数值降序
+            }}
           />
           <Legend 
             onClick={({ id = '' }) => handleLegendClick(id)}
