@@ -15,7 +15,7 @@ export const colorLegends = [
   { id: 3, name: '换型', color: taskColors.typeChange },
   { id: 4, name: '段取', color: taskColors.setup },
   { id: 5, name: '无效时间', color: taskColors.invalid },
-  { id: 6, name: '计划停止', color: taskColors.planned }
+//   { id: 6, name: '计划停止', color: taskColors.planned }
 ];
 
 // 根据任务ID获取背景色
@@ -29,4 +29,18 @@ export const getTaskBackgroundColor = (taskId: number | undefined) => {
     case 6: return taskColors.planned;
     default: return 'transparent';
   }
-}; 
+};
+
+// 预兆保全颜色配置
+export const maintenanceColors = {
+  highAlert: taskColors.fault,      // 高等级报警 - 使用故障相同颜色
+  lowAlert: taskColors.minorStop,   // 低等级报警 - 使用小停机相同颜色
+  correction: taskColors.setup,     // 修正值 - 使用段取相同颜色
+};
+
+// 预兆保全颜色说明
+export const maintenanceLegends = [
+  { id: 1, name: '高等级报警', color: maintenanceColors.highAlert },
+  { id: 2, name: '低等级报警', color: maintenanceColors.lowAlert },
+  { id: 3, name: '修正值', color: maintenanceColors.correction },
+]; 
