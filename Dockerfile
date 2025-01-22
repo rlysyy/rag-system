@@ -2,59 +2,42 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# 安装 prisma 依赖
-RUN apk add --no-cache libc6-compat
-RUN apk update
-
-# 复制项目文件
+# 安装依赖
 COPY package*.json ./
 COPY prisma ./prisma/
-
-# 安装依赖
 RUN npm install
 
-# 生成 Prisma 客户�?
+# 生成 Prisma 客户端
 RUN npx prisma generate
 
-# 复制其余文件
+# 复制源代码
 COPY . .
 
 # 构建应用
 RUN npm run build
-
-# 编译 next.config.ts 为 next.config.js
-RUN npx tsc next.config.ts --allowJs --esModuleInterop
 
 # 运行阶段
 FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV production
 
-# 安装 wait-for-it 脚本依赖
+# 安装必要的工具
 RUN apk add --no-cache bash postgresql-client
 
-# 复制 wait-for-it 脚本和启动脚�?
-COPY wait-for-it.sh .
-COPY start.sh .
-RUN chmod +x wait-for-it.sh start.sh
-
 # 复制必要文件
-COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/next.config.ts ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# 确保 TypeScript 在生产环境可用
-COPY --from=builder /app/node_modules/typescript ./node_modules/typescript
-COPY --from=builder /app/tsconfig.json ./
+# 复制启动脚本并设置权限
+COPY start.sh ./
+RUN chmod +x start.sh && \
+    dos2unix start.sh    # 修复可能的行尾问题
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# 使用启动脚本
-CMD ["./start.sh"] 
+# 使用 bash 显式执行脚本
+CMD ["/bin/bash", "./start.sh"] 
