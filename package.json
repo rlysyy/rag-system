@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postbuild": "tsc next.config.ts --allowJs --esModuleInterop"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",

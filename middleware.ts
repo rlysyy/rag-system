@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 
 // 使用命名导出
 export async function middleware(request: NextRequest) {
-  // 测试阶段：直接放行所有请�?
+  // 测试阶段：直接放行所有请求?
   return NextResponse.next()
 
   // 以下是原有的登录验证逻辑，暂时注释掉
@@ -30,5 +30,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'], // 保护所有页面，排除静态资�?
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'], // 保护所有页面，排除静态资源
 }
