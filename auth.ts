@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         if (!user) {
-          throw new Error('用户不存在')
+          throw new Error('用户不存�?)
         }
 
         const isValidPassword = await bcrypt.compare(
@@ -45,14 +45,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id // 将用户 ID 写入 token
-        token.email = user.email // 将用户邮箱写入 token
+        token.id = user.id // 将用�?ID 写入 token
+        token.email = user.email // 将用户邮箱写�?token
       }
       return token
     },
     async session({ session, token }) {
-      session.user.id = token.id as string // 将 token 中的用户 ID 写入 session
-      session.user.email = token.email as string // 将 token 中的用户邮箱写入 session
+      session.user.id = token.id as string // �?token 中的用户 ID 写入 session
+      session.user.email = token.email as string // �?token 中的用户邮箱写入 session
       return session
     },
   },

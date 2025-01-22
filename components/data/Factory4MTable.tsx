@@ -35,6 +35,7 @@ export function Factory4MTable() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [hiddenTaskIds, setHiddenTaskIds] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -160,10 +161,31 @@ export function Factory4MTable() {
     return dates.every(date => !row[date] || row[date] === '');
   };
 
-  // 在渲染表格时过滤掉空行
+  // 添加 legend 点击处理函数
+  const handleLegendClick = (taskStopId: number) => {
+    setHiddenTaskIds(prev => ({
+      ...prev,
+      [taskStopId]: !prev[taskStopId]
+    }));
+  };
+
+  // 修改表格数据过滤逻辑，只隐藏特定的单元格而不是整行
   const visibleData = useMemo(() => {
-    return filteredData.filter(row => !isEmptyRow(row));
-  }, [filteredData, dates]);
+    return filteredData.map(row => {
+      const newRow = { ...row };
+      
+      // 检查每个日期的单元格
+      dates.forEach(date => {
+        const cell = row[date];
+        // 如果单元格存在且包含被隐藏的 task_stop_id，则清空该单元格
+        if (cell && typeof cell !== 'string' && hiddenTaskIds[cell.task_stop_id]) {
+          newRow[date] = '';
+        }
+      });
+      
+      return newRow;
+    }).filter(row => !isEmptyRow(row)); // 最后过滤掉完全空的行
+  }, [filteredData, dates, hiddenTaskIds]);
 
   // 添加聚焦事件处理函数
   function handleDropdownOpen() {
@@ -267,12 +289,20 @@ export function Factory4MTable() {
         
         <div className="flex items-center gap-3 text-xs">
           {colorLegends.map(legend => (
-            <div key={legend.id} className="flex items-center gap-1">
+            <div 
+              key={legend.id} 
+              className="flex items-center gap-1 cursor-pointer"
+              onClick={() => handleLegendClick(legend.id)}
+            >
               <div 
-                className="w-3 h-3 rounded"
+                className={`w-3 h-3 rounded transition-opacity duration-200 ${
+                  hiddenTaskIds[legend.id] ? 'opacity-40' : ''
+                }`}
                 style={{ backgroundColor: legend.color }}
               />
-              <span>{legend.name}</span>
+              <span className={`${hiddenTaskIds[legend.id] ? 'opacity-40' : ''}`}>
+                {legend.name}
+              </span>
             </div>
           ))}
         </div>
