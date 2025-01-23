@@ -1,13 +1,14 @@
-import { Loader2 } from "lucide-react"
+import { Send } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface SenderProps {
-  onSend: (message: string) => void;
+  onSend: (content: string) => Promise<void>;
+  isLoading?: boolean;
+  onCancel?: () => void;
 }
 
-export function Sender({ onSend }: SenderProps) {
+export function Sender({ onSend, isLoading, onCancel }: SenderProps) {
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // 自动调整高度
@@ -26,25 +27,15 @@ export function Sender({ onSend }: SenderProps) {
 
   const handleSubmit = async () => {
     if (!input.trim() || isLoading) return
-    setIsLoading(true)
-    try {
-      onSend(input.trim())
-    } finally {
-      setIsLoading(false)
-      setInput('')
-      if (textareaRef.current) {
-        textareaRef.current.style.height = '48px'  // 重置高度
-      }
-    }
+    
+    const content = input.trim()
+    setInput('')
+    await onSend(content)
   }
-
-  const buttonPositionClass = textareaRef.current?.scrollHeight && textareaRef.current.scrollHeight > 48
-    ? 'bottom-4'
-    : 'top-[45%] -translate-y-1/2'
 
   return (
     <div className="relative w-full">
-      <div className="max-w-2xl mx-auto w-full relative">
+      <div className="max-w-3xl mx-auto w-full relative">
         <textarea
           ref={textareaRef}
           value={input}
@@ -57,33 +48,29 @@ export function Sender({ onSend }: SenderProps) {
           }}
           placeholder="输入消息..."
           disabled={isLoading}
-          className="w-full resize-none rounded-md border border-input bg-background px-4 py-3.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden pr-14"
-          style={{ minHeight: '48px' }}
+          className="w-full resize-none rounded-lg border border-input bg-background px-5 py-4 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden pr-16"
+          style={{ minHeight: '56px', maxHeight: '200px' }}
           rows={1}
         />
         <button
-          onClick={handleSubmit}
-          disabled={isLoading || !input.trim()}
-          className={`absolute right-4 transition-all duration-200 p-1.5 rounded-full disabled:opacity-50 ${
-            input.trim() ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 'hover:bg-muted'
-          } ${buttonPositionClass}`}
+          onClick={isLoading ? onCancel : handleSubmit}
+          disabled={isLoading ? false : !input.trim()}
+          className={`absolute right-5 bottom-4 transition-all duration-200 p-2 rounded-full flex items-center justify-center ${
+            isLoading 
+              ? 'bg-primary/10' 
+              : input.trim() 
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                : 'hover:bg-muted'
+          }`}
         >
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <div className="relative h-5 w-5 flex items-center justify-center">
+              <div className="absolute w-1.5 h-1.5 bg-primary rounded-sm" />
+              <div className="absolute inset-[-2px] border-[1.5px] border-primary/20 rounded-full" />
+              <div className="absolute inset-[-2px] border-[1.5px] border-transparent border-t-primary rounded-full animate-[spin_1s_linear_infinite]" />
+            </div>
           ) : (
-            <svg 
-              className="h-5 w-5" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M2 21l21-9L2 3v7l15 2-15 2v7z" 
-              />
-            </svg>
+            <Send className="h-5 w-5" />
           )}
         </button>
       </div>

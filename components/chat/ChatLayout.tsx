@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -23,6 +23,7 @@ export default function ChatLayout({ showDataPanel = false }: ChatLayoutProps) {
     { role: 'assistant', content: 'Sure! I\'d be happy to help you with React. What would you like to know?' },
   ])
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleNewConversation = () => {
     const newConversation = { 
@@ -35,25 +36,40 @@ export default function ChatLayout({ showDataPanel = false }: ChatLayoutProps) {
   }
 
   const handleSendMessage = async (content: string) => {
-    // 添加用户消息
-    setMessages(prev => [...prev, { role: 'user', content }]);
+    if (isLoading) return;
     
-    // 立即设置加载状态
+    setMessages(prev => [...prev, { role: 'user', content }]);
     setIsLoading(true);
+    
+    // 创建新的 AbortController
+    abortControllerRef.current = new AbortController();
 
     try {
-      // 模拟 API 调用
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // 模拟 API 调用，传入 signal
+      await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(resolve, 3000);
+        abortControllerRef.current?.signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId);
+          reject(new Error('Cancelled'));
+        });
+      });
+
       const aiResponse = "This is a simulated response.";
-      
-      // 添加 AI 响应
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-    } catch (error) {
-      console.error('Error:', error);
-      // 可以添加错误处理
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Cancelled') {
+        console.log('Request cancelled');
+      } else {
+        console.error('Error:', error);
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
   };
 
   return (
@@ -118,7 +134,11 @@ export default function ChatLayout({ showDataPanel = false }: ChatLayoutProps) {
           </div>
           <div className="p-4">
             <div className="max-w-4xl mx-auto">
-              <Sender onSend={handleSendMessage} />
+              <Sender 
+                onSend={handleSendMessage} 
+                isLoading={isLoading}
+                onCancel={handleCancel}
+              />
             </div>
           </div>
         </div>
