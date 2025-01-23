@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Loader2 } from "lucide-react"
+import { Sender } from "@/app/components/Sender"
 
 export default function ChatLayout() {
   const [conversations, setConversations] = useState([
@@ -15,10 +17,12 @@ export default function ChatLayout() {
   const [activeConversation, setActiveConversation] = useState<string | null>('1')
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([])
   const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSend = async () => {
-    if (!input.trim()) return
+    if (!input.trim() || isLoading) return
 
+    setIsLoading(true)
     // 添加用户消息
     setMessages((prev) => [...prev, { role: 'user', content: input }])
     setInput('')
@@ -38,6 +42,8 @@ export default function ChatLayout() {
     } catch (error) {
       console.error('发送消息失败:', error)
       setMessages((prev) => [...prev, { role: 'assistant', content: '抱歉，出错了，请稍后再试。' }])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -49,7 +55,7 @@ export default function ChatLayout() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex h-screen">
       {/* 左侧栏 */}
       <div className="w-64 border-r bg-[hsl(var(--background))]">
         <div className="p-4">
@@ -57,7 +63,6 @@ export default function ChatLayout() {
             新建对话
           </Button>
         </div>
-        <Separator />
         <div className="p-2 text-sm font-medium text-muted-foreground">
           历史记录
         </div>
@@ -106,16 +111,8 @@ export default function ChatLayout() {
             </div>
           ))}
         </div>
-        <div className="border-t p-4 bg-background">
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="输入消息..."
-            />
-            <Button onClick={handleSend}>发送</Button>
-          </div>
+        <div className="p-4 bg-background">
+          <Sender />
         </div>
       </div>
     </div>

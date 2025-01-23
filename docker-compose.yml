@@ -6,7 +6,7 @@ services:
       - "60302:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/rag_system
+      - DATABASE_URL=postgresql://postgres:postgres@db:5433/rag_system
     depends_on:
       db:
         condition: service_healthy
@@ -18,7 +18,7 @@ services:
     image: postgres:15
     container_name: rag-db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
