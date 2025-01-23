@@ -1,7 +1,11 @@
 import { Loader2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
-export function Sender() {
+interface SenderProps {
+  onSend: (message: string) => void;
+}
+
+export function Sender({ onSend }: SenderProps) {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -24,11 +28,7 @@ export function Sender() {
     if (!input.trim() || isLoading) return
     setIsLoading(true)
     try {
-      await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
-      })
+      onSend(input.trim())
     } finally {
       setIsLoading(false)
       setInput('')
@@ -43,8 +43,8 @@ export function Sender() {
     : 'top-[45%] -translate-y-1/2'
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 px-4">
-      <div className="relative max-w-2xl mx-auto w-full">
+    <div className="relative w-full">
+      <div className="max-w-2xl mx-auto w-full relative">
         <textarea
           ref={textareaRef}
           value={input}

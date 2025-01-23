@@ -53,14 +53,25 @@ module.exports = {
           from: { height: 'var(--radix-collapsible-content-height)' },
           to: { height: 0 },
         },
+        'bounce-fast': {
+          '0%, 100%': {
+            transform: 'translateY(0)',
+            animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
+          },
+          '50%': {
+            transform: 'translateY(-6px)',
+            animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+          },
+        },
       },
       animation: {
         slideDown: 'slideDown 300ms ease-out',
         slideUp: 'slideUp 300ms ease-out',
+        'bounce-fast': 'bounce-fast 0.8s infinite',
       },
     },
   },
   plugins: [
-    // require('tailwind-scrollbar-hide')
+    // require('tailwind-scrollbar-hide'),
   ],
 } 
