@@ -101,9 +101,6 @@ export default function SignUpForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? '注册中...' : '注册'}
-          </Button>
         </form>
       </CardContent>
     </Card>

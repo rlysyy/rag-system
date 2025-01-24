@@ -5,11 +5,9 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { z } from 'zod'
 
-// 定义登录表单的验证规则
 const loginSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),
   password: z.string().min(5, '密码至少需要 5 个字符'),
@@ -20,7 +18,7 @@ export default function SignInForm() {
   const [error, setError] = useState<string | null>(null)
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault() //阻止表单的默认提交行为（即阻止页面刷新）
+    e.preventDefault()
     setError(null)
 
     const formData = new FormData(e.currentTarget)
@@ -30,9 +28,7 @@ export default function SignInForm() {
     }
 
     try {
-      // 验证表单数据
       loginSchema.parse(data)
-
       const result = await signIn('credentials', {
         email: data.email,
         password: data.password,
@@ -46,7 +42,7 @@ export default function SignInForm() {
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        setError(error.errors[0].message) // 显示第一个验证错误
+        setError(error.errors[0].message)
       } else {
         setError('登录失败，请重试')
       }
@@ -54,30 +50,32 @@ export default function SignInForm() {
   }
 
   return (
-    <Card className="w-[350px] mx-auto mt-10">
-      <CardHeader>
-        <CardTitle className="text-center">登录</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+    <div className="flex flex-col space-y-8">
+      <div className="flex flex-col space-y-4 text-center">
+        <h1 className="text-4xl font-bold tracking-tight">欢迎使用</h1>
+        <p className="text-2xl font-medium text-muted-foreground">
+          智能工厂知识库系统
+        </p>
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
             <Label htmlFor="email">邮箱</Label>
-            <Input 
-              id="email" 
-              name="email" 
-              type="email" 
-              placeholder="请输入邮箱" 
-              required 
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="your.name@company.com"
+              required
             />
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="password">密码</Label>
-            <Input
+            <Input 
               id="password"
-              name="password"
-              type="password"
-              placeholder="请输入密码"
-              required
+              name="password" 
+              type="password" 
+              required 
             />
           </div>
           {error && (
@@ -88,8 +86,8 @@ export default function SignInForm() {
           <Button type="submit" className="w-full">
             登录
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </form>
+    </div>
   )
-} 
+}
