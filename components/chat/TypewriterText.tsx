@@ -7,37 +7,44 @@ export function TypewriterText({ content, onComplete }: {
 }) {
   const [displayedContent, setDisplayedContent] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
-  const { isLoading, isTyping, stopTyping } = useChatStore()
+  const { isTyping, stopTyping } = useChatStore()
 
   useEffect(() => {
+    // 重置状态
+    setDisplayedContent('')
+    setCurrentIndex(0)
+  }, [content])
+
+  useEffect(() => {
+    if (!isTyping) return
+
     let segments: string[]
-    
-    // 检查浏览器是否支持 Intl.Segmenter
     if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
       const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' })
       segments = Array.from(segmenter.segment(content)).map(s => s.segment)
     } else {
-      // 降级方案：使用 Array.from
       segments = Array.from(content)
     }
-    
-    if (currentIndex < segments.length && !isLoading && isTyping) {
+
+    if (currentIndex < segments.length) {
       const timer = setTimeout(() => {
-        setDisplayedContent(prev => prev + segments[currentIndex])
+        const newContent = segments.slice(0, currentIndex + 1).join('')
+        setDisplayedContent(newContent)
         setCurrentIndex(prev => prev + 1)
       }, 50)
 
       return () => clearTimeout(timer)
     } else {
       if (onComplete) onComplete()
-      if (isTyping) {
-        stopTyping()
-        // 更新消息内容为当前已显示的内容
-        useChatStore.getState().updateLastMessage(displayedContent)
-      }
+      stopTyping()
     }
-  }, [content, currentIndex, onComplete, isLoading, isTyping, stopTyping, displayedContent])
+  }, [content, currentIndex, isTyping, stopTyping, onComplete])
 
-  // 总是返回当前已显示的内容
-  return <span>{displayedContent}</span>
+  // 如果不在打字状态，显示完整内容
+  if (!isTyping) {
+    return <span>{content}</span>
+  }
+
+  // 在打字状态下显示当前内容
+  return <span className="typing-content">{displayedContent}</span>
 } 
