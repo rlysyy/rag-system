@@ -25,12 +25,14 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex overflow-hidden">
-      {/* 聊天区域 */}
-      <div className={cn(
-        "transition-[width] duration-300 ease-in-out min-w-0",
-        showDataPanel ? "w-[50%]" : "w-full"
-      )}>
-        <ChatLayout />
+      {/* 聊天区域容器 */}
+      <div className="relative w-full h-full">
+        <div className={cn(
+          "w-full h-full transition-transform duration-300 ease-in-out",
+          showDataPanel && "!w-[50vw]"
+        )}>
+          <ChatLayout />
+        </div>
       </div>
 
       {/* 数据面板切换按钮 */}
@@ -47,7 +49,7 @@ export default function ChatPage() {
 
       {/* 数据面板 */}
       <div className={cn(
-        "fixed right-0 top-0 h-full w-[50%] border-l bg-background custom-scrollbar transition-transform duration-300 ease-in-out",
+        "fixed right-0 top-0 h-full w-[50%] border-l bg-background custom-scrollbar transition-transform duration-300 ease-in-out transform",
         showDataPanel ? "translate-x-0" : "translate-x-full"
       )}>
         <div className="min-w-0 h-full">
