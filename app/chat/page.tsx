@@ -49,11 +49,16 @@ export default function ChatPage() {
 
       {/* 数据面板 */}
       <div className={cn(
-        "fixed right-0 top-0 h-full w-[50%] border-l bg-background custom-scrollbar transition-transform duration-300 ease-in-out transform",
+        "fixed right-0 top-0 h-full w-[50%] border-l bg-white",
+        "custom-scrollbar transition-transform duration-300 ease-in-out transform shadow-lg",
         showDataPanel ? "translate-x-0" : "translate-x-full"
       )}>
-        <div className="min-w-0 h-full">
-          {showDataPanel && <DataPage />}
+        <div className="min-w-0 h-full bg-gray-50/50">
+          {showDataPanel && (
+            <div className="light p-6">
+              <DataPage />
+            </div>
+          )}
         </div>
       </div>
     </div>

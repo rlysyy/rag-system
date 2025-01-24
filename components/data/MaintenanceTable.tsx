@@ -102,82 +102,71 @@ export function MaintenanceTable({ data, unitIds }: MaintenanceTableProps) {
 
   return (
     <>
-      {/* 颜色说明 */}
-      {/* <div className="flex items-center gap-4 mb-4 ml-[60px]">
-        {maintenanceLegends.map((legend) => (
-          <div key={legend.id} className="flex items-center text-xs">
-            <div 
-              className="w-3 h-3 rounded mr-1.5"
-              style={{ backgroundColor: legend.color }}
-            />
-            <span>{legend.name}</span>
-          </div>
-        ))}
-      </div> */}
       {/* 标题 */}
-      <div className="flex items-center ml-[60px] mb-4">
-        <div className="text-sm font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-1 h-4 bg-blue-500 rounded"></div>
+        <div className="text-lg font-medium dark:text-gray-200">
           气缸电磁阀
         </div>
       </div>
+
       {/* 表格 */}
-      <div className="text-xs ml-[60px] relative">
-        <Table className="w-full table-fixed">
-          <TableHeader>
-            <TableRow>
-              {allDates.map((date) => (
-                <TableCell 
-                  key={date}
-                  className="text-center font-medium p-2 bg-gray-50"
-                  style={{ width: '80px', height: '40px' }}
-                >
-                  {date}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {unitIds.map((unitId) => (
-              <TableRow 
-                key={unitId} 
-                className={`hover:bg-gray-50/50 ${isTouchDevice ? 'cursor-pointer' : ''}`}
-                onMouseEnter={() => !isTouchDevice && setShowTooltip(true)}
-                onMouseLeave={() => !isTouchDevice && setShowTooltip(false)}
-                onMouseMove={(e) => handleMouseMove(e, unitId)}
-                onClick={(e) => handleRowClick(e, unitId)}
-              >
+      <div className="text-xs relative">
+        <div className="rounded-md border dark:border-gray-800">
+          <Table className="w-full table-fixed">
+            <TableHeader>
+              <TableRow>
                 {allDates.map((date) => (
-                  <TableCell
-                    key={`${unitId}-${date}`}
-                    className="text-center p-0"
-                    style={{ width: '80px', height: '30px' }}
+                  <TableCell 
+                    key={date}
+                    className="text-center font-medium p-2 
+                      bg-gray-100/80 dark:bg-gray-800 
+                      text-muted-foreground dark:text-gray-300"
+                    style={{ width: '80px', height: '40px' }}
                   >
-                    {groupedData[date]?.[unitId]?.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="text-[11px] p-1 h-full"
-                        style={{ backgroundColor: getCellColor(item.remarks) }}
-                      >
-                        {item.remarks}
-                      </div>
-                    ))}
+                    {date}
                   </TableCell>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {unitIds.map((unitId) => (
+                <TableRow 
+                  key={unitId} 
+                  className={`hover:bg-gray-50/50 dark:hover:bg-gray-800/50 ${isTouchDevice ? 'cursor-pointer' : ''}`}
+                  onMouseEnter={() => !isTouchDevice && setShowTooltip(true)}
+                  onMouseLeave={() => !isTouchDevice && setShowTooltip(false)}
+                  onMouseMove={(e) => handleMouseMove(e, unitId)}
+                  onClick={(e) => handleRowClick(e, unitId)}
+                >
+                  {allDates.map((date) => (
+                    <TableCell
+                      key={`${unitId}-${date}`}
+                      className="text-center p-0 bg-white dark:bg-gray-800/30"
+                      style={{ width: '80px', height: '30px' }}
+                    >
+                      {groupedData[date]?.[unitId]?.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="text-[11px] p-1 h-full dark:text-white"
+                          style={{ backgroundColor: getCellColor(item.remarks) }}
+                        >
+                          {item.remarks}
+                        </div>
+                      ))}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
+        {/* Tooltip */}
         {showTooltip && activeUnitId !== null && (
           <div 
-            className="absolute z-[100] pointer-events-none"
+            className="absolute z-[100] pointer-events-none bg-gray-800 text-white px-2 py-1 rounded text-xs"
             style={{
-              backgroundColor: 'rgb(31, 41, 55)',
-              color: 'white',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              whiteSpace: 'nowrap',
               top: '0',
               left: `${tooltipPosition.x}px`,
               transform: 'translate(-50%, -100%) translateY(-4px)'

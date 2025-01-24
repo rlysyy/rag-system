@@ -1,22 +1,25 @@
 'use client'
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { z } from 'zod'
 
-const loginSchema = z.object({
+const signUpSchema = z.object({
   email: z.string().email('请输入有效的邮箱地址'),
   password: z.string().min(5, '密码至少需要 5 个字符'),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "两次输入的密码不一致",
+  path: ["confirmPassword"],
 })
 
-export default function SignInForm() {
+export default function SignUpForm() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
-  
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
@@ -25,26 +28,36 @@ export default function SignInForm() {
     const data = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
+      confirmPassword: formData.get('confirmPassword') as string,
     }
 
     try {
-      loginSchema.parse(data)
-      const result = await signIn('credentials', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
+      signUpSchema.parse(data)
+      
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
       })
 
-      if (result?.error) {
-        setError(result.error)
-      } else {
-        router.push('/')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '注册失败')
       }
+
+      router.push('/login')
     } catch (error) {
       if (error instanceof z.ZodError) {
         setError(error.errors[0].message)
+      } else if (error instanceof Error) {
+        setError(error.message)
       } else {
-        setError('登录失败，请重试')
+        setError('注册失败，请重试')
       }
     }
   }
@@ -52,7 +65,7 @@ export default function SignInForm() {
   return (
     <div className="flex flex-col space-y-8">
       <div className="flex flex-col space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">欢迎使用</h1>
+        <h1 className="text-4xl font-bold tracking-tight">创建账户</h1>
         <p className="text-2xl font-medium text-muted-foreground">
           智能工厂知识库系统
         </p>
@@ -78,16 +91,25 @@ export default function SignInForm() {
               required 
             />
           </div>
+          <div className="grid gap-2">
+            <Label htmlFor="confirmPassword">确认密码</Label>
+            <Input 
+              id="confirmPassword"
+              name="confirmPassword" 
+              type="password" 
+              required 
+            />
+          </div>
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           <Button type="submit" className="w-full">
-            登录
+            注册
           </Button>
         </div>
       </form>
     </div>
   )
-}
+} 

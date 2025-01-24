@@ -205,8 +205,8 @@ export function Factory4MTable() {
   }
 
   return (
-    <>
-      <div className="ml-[60px] mb-2 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+    <div className="w-full">
+      <div className="mb-4 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu onOpenChange={(open) => {
           if (open) {
             handleDropdownOpen();
@@ -214,14 +214,14 @@ export function Factory4MTable() {
         }}>
           <DropdownMenuTrigger asChild>
             <Button 
-              variant="outline" 
-              className="h-8"
+              variant="default"
+              size="sm"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
             >
-              <FilterIcon className="mr-2 h-4 w-4" />
+              <Filter className="mr-2 h-4 w-4" />
               筛选
               {selectedFilters.length > 0 && (
                 <span className="ml-1">({selectedFilters.length})</span>
@@ -230,7 +230,7 @@ export function Factory4MTable() {
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="start" 
-            className="w-[300px]"
+            className="w-[300px] bg-white dark:bg-gray-900 dark:border-gray-800"
             onClick={(e) => e.stopPropagation()}
             style={{ 
               zIndex: 1000,
@@ -241,28 +241,13 @@ export function Factory4MTable() {
               overflowY: 'auto'
             }}
           >
-            <div 
-              className="px-2 py-2" 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              style={{ position: 'relative' }}
-            >
+            <div className="px-2 py-2">
               <Input
                 ref={searchInputRef}
                 placeholder="搜索..."
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                }}
-                className="w-full"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400"
               />
             </div>
             {filteredOptions.slice(0, 10).map((option) => (
@@ -271,11 +256,7 @@ export function Factory4MTable() {
                 checked={selectedFilters.includes(option)}
                 onSelect={(e) => e.preventDefault()}
                 onCheckedChange={() => handleFilterChange(option)}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleFilterChange(option);
-                }}
+                className="dark:text-white dark:focus:bg-gray-800"
               >
                 {option}
               </DropdownMenuCheckboxItem>
@@ -296,7 +277,7 @@ export function Factory4MTable() {
                 }`}
                 style={{ backgroundColor: legend.color }}
               />
-              <span className={`${hiddenTaskIds[legend.id] ? 'opacity-40' : ''}`}>
+              <span className={`${hiddenTaskIds[legend.id] ? 'opacity-40' : ''} dark:text-white`}>
                 {legend.name}
               </span>
             </div>
@@ -304,94 +285,124 @@ export function Factory4MTable() {
         </div>
       </div>
 
-      <div className="text-xs ml-[60px]">
-        <div 
-          className="min-h-[800px] overflow-visible"
-          style={{
-            width: `${dates.length * 96}px`,
-            maxWidth: `${dates.length * 96}px`
-          }}
-        >
-          <div className="w-full overflow-visible">
-            <Table className="w-full border-collapse table-fixed relative">
-              <colgroup>
+      <div className="rounded-md border dark:border-gray-800">
+        <div className="min-h-[800px] overflow-visible">
+          <Table className="w-full border-collapse table-fixed relative">
+            <TableHeader>
+              <TableRow>
                 {dates.map((date) => (
-                  <col key={date} style={{ width: '80px' }} />
+                  <TableHead 
+                    key={date} 
+                    className="text-center overflow-visible box-border h-10 align-middle font-medium 
+                      bg-gray-100/80 dark:bg-gray-900 
+                      text-muted-foreground dark:text-white"
+                    style={{ 
+                      width: '80px',
+                      padding: '8px'
+                    }}
+                  >
+                    {date.slice(5).replace('-', '-')}
+                  </TableHead>
                 ))}
-              </colgroup>
-              <TableHeader>
-                <TableRow>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visibleData.map((row, rowIndex) => (
+                <TableRow key={rowIndex}>
                   {dates.map((date) => (
-                    <TableHead 
+                    <TableCell 
                       key={date} 
-                      className="text-center overflow-visible box-border h-10 align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]"
+                      className="text-center overflow-visible group relative box-border align-middle
+                        bg-white dark:bg-gray-900/70
+                        text-foreground dark:text-white"
                       style={{ 
                         width: '80px',
-                        padding: '8px'
+                        padding: '8px',
+                        backgroundColor: row[date] && typeof row[date] !== 'string' 
+                          ? getBackgroundColor(row[date].task_stop_id) 
+                          : ''
                       }}
                     >
-                      {date.slice(5).replace('-', '-')}
-                    </TableHead>
+                      <div className="relative group/tooltip">
+                        <span>
+                          {row[date] && typeof row[date] !== 'string' ? (() => {
+                            const text = row[date].text;
+                            const [taskName, count] = text.split('*');
+                            const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
+                            return count ? `${displayText}*${count}` : displayText;
+                          })() : null}
+                        </span>
+                        {row[date] && typeof row[date] !== 'string' && row[date].text.length > 4 && (
+                          <div className="absolute hidden group-hover/tooltip:block z-[100]"
+                               style={{
+                                 backgroundColor: 'rgb(31, 41, 55)',
+                                 color: 'white',
+                                 padding: '4px 8px',
+                                 borderRadius: '4px',
+                                 fontSize: '12px',
+                                 whiteSpace: 'nowrap',
+                                 bottom: '100%',
+                                 marginBottom: '4px',
+                                 ...(dates.indexOf(date) === 0 
+                                   ? { left: '0' }
+                                   : dates.indexOf(date) === dates.length - 1
+                                   ? { right: '0' }
+                                   : { left: '50%', transform: 'translateX(-50%)' }
+                                 )
+                               }}
+                          >
+                            {row[date].text}
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800" />
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                   ))}
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleData.map((row, rowIndex) => (
-                  <TableRow key={rowIndex}>
-                    {dates.map((date) => (
-                      <TableCell 
-                        key={date} 
-                        className="text-center overflow-visible group relative box-border align-middle"
-                        style={{ 
-                          width: '80px',
-                          padding: '8px',
-                          backgroundColor: row[date] && typeof row[date] !== 'string' 
-                            ? getBackgroundColor(row[date].task_stop_id) 
-                            : 'transparent'
-                        }}
-                      >
-                        <div className="relative group/tooltip">
-                          <span>
-                            {row[date] && typeof row[date] !== 'string' ? (() => {
-                              const text = row[date].text;
-                              const [taskName, count] = text.split('*');
-                              const displayText = taskName.length > 4 ? `${taskName.slice(0, 4)}...` : taskName;
-                              return count ? `${displayText}*${count}` : displayText;
-                            })() : null}
-                          </span>
-                          {row[date] && typeof row[date] !== 'string' && row[date].text.length > 4 && (
-                            <div className="absolute hidden group-hover/tooltip:block z-[100]"
-                                 style={{
-                                   backgroundColor: 'rgb(31, 41, 55)',
-                                   color: 'white',
-                                   padding: '4px 8px',
-                                   borderRadius: '4px',
-                                   fontSize: '12px',
-                                   whiteSpace: 'nowrap',
-                                   bottom: '100%',
-                                   marginBottom: '4px',
-                                   ...(dates.indexOf(date) === 0 
-                                     ? { left: '0' }
-                                     : dates.indexOf(date) === dates.length - 1
-                                     ? { right: '0' }
-                                     : { left: '50%', transform: 'translateX(-50%)' }
-                                   )
-                                 }}
-                            >
-                              {row[date].text}
-                              <div className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800" />
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
-    </>
+
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-4 bg-blue-500 rounded"></div>
+          <h3 className="text-lg font-medium dark:text-white">气缸电磁阀</h3>
+        </div>
+        <div className="rounded-md border dark:border-gray-800">
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow>
+                {dates.map((date) => (
+                  <TableHead 
+                    key={date}
+                    className="text-center bg-gray-100/80 dark:bg-gray-900 
+                      text-muted-foreground dark:text-white h-10"
+                  >
+                    {date}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array(4).fill(null).map((_, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {dates.map((date) => (
+                    <TableCell 
+                      key={date}
+                      className="text-center bg-white dark:bg-gray-900/70
+                        text-foreground dark:text-white h-10"
+                    >
+                      修正值
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from 'next/font/local';
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/providers/theme-provider"
 
 // 定义字体
 const notoSans = localFont({
@@ -29,15 +29,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
-      <body
-        className={`${notoSans.variable} ${notoSansSC.variable} ${notoSansJP.variable}`}
-      >
+      <body className={`${notoSans.variable} ${notoSansSC.variable} ${notoSansJP.variable}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -48,5 +45,5 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }
