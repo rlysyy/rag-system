@@ -116,7 +116,7 @@ export default function ChatLayout({ showDataPanel = false }: ChatLayoutProps) {
                   <Bubble
                     content={msg.content}
                     role={msg.role}
-                    avatar={msg.role === 'assistant' ? '/bot-avatar.png' : '/user-avatar.png'}
+                    isLoading={false}
                   />
                 </div>
               ))}
@@ -125,7 +125,6 @@ export default function ChatLayout({ showDataPanel = false }: ChatLayoutProps) {
                   <Bubble
                     content=""
                     role="assistant"
-                    avatar="/bot-avatar.png"
                     isLoading={true}
                   />
                 </div>

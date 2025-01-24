@@ -3,27 +3,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 interface BubbleProps {
   content: string;
   role: 'user' | 'assistant';
-  avatar?: string;
   isLoading?: boolean;
 }
 
-export function Bubble({ content, role, avatar, isLoading }: BubbleProps) {
+export function Bubble({ content, role, isLoading }: BubbleProps) {
   const isUser = role === 'user'
   
   return (
     <div className={`flex items-start gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       <Avatar className="h-8 w-8 mt-1">
-        {isUser ? (
-          <>
-            <AvatarImage src="/user-avatar.png" alt="User" />
-            <AvatarFallback>U</AvatarFallback>
-          </>
-        ) : (
-          <>
-            <AvatarImage src="/bot-avatar.png" alt="AI" />
-            <AvatarFallback>AI</AvatarFallback>
-          </>
-        )}
+        <AvatarImage src={`/avatars/${isUser ? 'user' : 'bot'}-avatar.svg`} alt={isUser ? "User" : "AI"} />
+        <AvatarFallback>{isUser ? "U" : "AI"}</AvatarFallback>
       </Avatar>
       <div
         className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm ${
