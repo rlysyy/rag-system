@@ -1,12 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { maintenanceColors, maintenanceLegends } from "@/lib/constants/colors";
-import { TestDataMaintenance } from "@/lib/types";
+import { MaintenanceTableProps } from '@/types/data';
 import { useState, useEffect } from "react";
-
-interface MaintenanceTableProps {
-  data: TestDataMaintenance[];
-  unitIds: number[];
-}
 
 export function MaintenanceTable({ data, unitIds }: MaintenanceTableProps) {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });

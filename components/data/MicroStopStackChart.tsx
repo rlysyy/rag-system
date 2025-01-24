@@ -2,15 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { testDataMicroStops } from '@/lib/mockData/test-data-microStops';
 import { generateChartColors } from '@/lib/utils/colors';
-
-interface ChartProps {
-  chartWidth: number;
-}
-
-interface ChartDataItem {
-  date: string;
-  [key: string]: number | string;
-}
+import { ChartProps, ChartDataItem } from '@/types/data';
 
 export function MicroStopStackChart({ chartWidth }: ChartProps) {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);

@@ -21,11 +21,7 @@ import { FilterIcon, Filter } from "lucide-react";
 import { testData } from '@/lib/mockData/test-data';
 import { Input } from "@/components/ui/input";
 import { colorLegends, getTaskBackgroundColor } from '@/lib/constants/colors';
-
-interface TaskData {
-  text: string;
-  task_stop_id: number;
-}
+import { TaskData } from '@/types/data';
 
 // 使用导入的函数替换原有的 getBackgroundColor
 const getBackgroundColor = getTaskBackgroundColor;

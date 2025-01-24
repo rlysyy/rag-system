@@ -2,80 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { testDataDefectRate, dailyDefectRates } from '@/lib/mockData/test-data-defectRate';
 import { generateChartColors } from '@/lib/utils/colors';
-
-// 定义图表数据项的接口
-interface ChartDataItem {
-  date: string;
-  [key: string]: number | string;  // 动态键值对，用于存储不同类型的不良数量
-}
-
-// 定义具体类型替代 any
-type ChartDataType = {
-  name: string;
-  value: number;
-  // 添加其他需要的字段
-};
+import { ChartProps, ChartDataItem, ChartDataType } from '@/types/data';
+import { useDefectRate } from '@/hooks/useDefectRate';
 
 // 使用定义的类型
 const data: ChartDataType[] = [
   // ... 你的数据
 ];
 
-interface ChartProps {
-  chartWidth: number;  // 添加回 chartWidth
-}
-
 export function DefectRateStackChart({ chartWidth }: ChartProps) {
-  // 状态管理
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);  // 图表数据
-  const [errorTypes, setErrorTypes] = useState<string[]>([]);        // 不良类型列表
-  const [hiddenBars, setHiddenBars] = useState<Record<string, boolean>>({});  // 控制每种不良类型的显示/隐藏
-
-  // 初始化数据
-  useEffect(() => {
-    const groupedData = testDataDefectRate.reduce((acc: Record<string, ChartDataItem>, curr) => {
-      const date = curr.dttime.split('-').slice(1).join('-');
-      if (!acc[date]) {
-        acc[date] = { 
-          date,
-          total_defect_rate: dailyDefectRates[curr.dttime] || 0
-        };
-      }
-      acc[date][curr.ngid] = (Number(acc[date][curr.ngid]) || 0) + curr.count;
-      return acc;
-    }, {});
-
-    setChartData(Object.values(groupedData));
-    
-    const types = [...new Set(testDataDefectRate.map(item => item.ngid))];
-    setErrorTypes(types);
-    
-    const initialHiddenBars: Record<string, boolean> = {};
-    types.forEach(type => {
-      initialHiddenBars[type] = false;
-    });
-    setHiddenBars(initialHiddenBars);
-  }, []);
-
-  // 处理图例点击事件
-  const handleLegendClick = useCallback((dataKey: string) => {
-    if (dataKey === 'all') {
-      // 处理"全选/取消全选"
-      const newHiddenBars: Record<string, boolean> = {};
-      const shouldShow = errorTypes.some(type => hiddenBars[type]);  // 检查是否有隐藏的类型
-      errorTypes.forEach(type => {
-        newHiddenBars[type] = !shouldShow;  // 统一设置显示状态
-      });
-      setHiddenBars(newHiddenBars);
-    } else {
-      // 处理单个类型的显示/隐藏
-      setHiddenBars(prev => {
-        const newHiddenBars = { ...prev };
-        newHiddenBars[dataKey] = !prev[dataKey];  // 切换显示状态
-        return newHiddenBars;
-      });
-    }
-  }, [errorTypes, hiddenBars]);
+  const { chartData, errorTypes, hiddenBars, handleLegendClick } = useDefectRate();
 
   return (
     <div className="w-full h-full">

@@ -39,7 +39,7 @@ export default function ChatPage() {
       <Button 
         variant="outline" 
         className={cn(
-          "fixed right-4 top-1/2 -translate-y-1/2 z-50 p-2 transition-transform duration-300",
+          "fixed right-4 top-1/2 -translate-y-1/2 z-50 p-2 transition-transform duration-300 mr-2",
           showDataPanel && "translate-x-0"
         )}
         onClick={() => setShowDataPanel(!showDataPanel)}
