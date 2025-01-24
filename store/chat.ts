@@ -14,9 +14,15 @@ interface ChatStore {
   currentChatId: string
   chatHistory: ChatHistory[]
   isLoading: boolean
+  stopGeneration: boolean
+  isTyping: boolean
   addMessage: (message: Message) => Promise<void>
   clearMessages: () => void
   loadChat: (chatId: string) => void
+  setStopGeneration: (stop: boolean) => void
+  stopCurrentResponse: () => void
+  stopTyping: () => void
+  updateLastMessage: (content: string) => void
 }
 
 const updateLocalStorage = (key: string, value: any) => {
@@ -68,8 +74,28 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
 
   isLoading: false,
 
+  stopGeneration: false,
+
+  isTyping: false,
+
+  setStopGeneration: (stop: boolean) => set({ stopGeneration: stop }),
+
+  stopCurrentResponse: () => {
+    set({ 
+      isLoading: false,
+      stopGeneration: true,
+      isTyping: false 
+    })
+  },
+
+  stopTyping: () => {
+    set({ isTyping: false })
+  },
+
   addMessage: async (message: Message) => {
-    const { messages, currentChatId } = get()
+    const { messages, currentChatId, stopGeneration } = get()
+    set({ stopGeneration: false })
+    
     set(state => ({ messages: [...state.messages, message] }))
 
     if (message.role === 'user') {
@@ -95,6 +121,10 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
         await new Promise(resolve => setTimeout(resolve, 1000))
         const response = getMockResponse()
         
+        if (get().stopGeneration) {
+          return
+        }
+        
         const newMessage = {
           role: 'assistant' as const,
           content: response.content,
@@ -102,6 +132,7 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
           references: response.references
         }
 
+        set({ isTyping: true })
         set(state => ({ messages: [...state.messages, newMessage] }))
         
         const allMessages = [...updatedMessages, newMessage]
@@ -157,6 +188,25 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
         messages: convertDates(JSON.parse(savedMessages))
       })
       localStorage.setItem(STORAGE_KEY, savedMessages)
+    }
+  },
+
+  updateLastMessage: (content: string) => {
+    const { messages } = get()
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage && lastMessage.role === 'assistant') {
+      const updatedMessage = {
+        ...lastMessage,
+        content: content + '\n\n这条消息已停止'
+      }
+      set({
+        messages: [...messages.slice(0, -1), updatedMessage]
+      })
+      
+      // 更新本地存储
+      const currentChatId = get().currentChatId
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...messages.slice(0, -1), updatedMessage]))
+      localStorage.setItem(`messages-${currentChatId}`, JSON.stringify([...messages.slice(0, -1), updatedMessage]))
     }
   }
 })) 

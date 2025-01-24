@@ -7,7 +7,7 @@ export function TypewriterText({ content, onComplete }: {
 }) {
   const [displayedContent, setDisplayedContent] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
-  const { isLoading } = useChatStore()
+  const { isLoading, isTyping, stopTyping } = useChatStore()
 
   useEffect(() => {
     let segments: string[]
@@ -21,17 +21,23 @@ export function TypewriterText({ content, onComplete }: {
       segments = Array.from(content)
     }
     
-    if (currentIndex < segments.length && !isLoading) {
+    if (currentIndex < segments.length && !isLoading && isTyping) {
       const timer = setTimeout(() => {
         setDisplayedContent(prev => prev + segments[currentIndex])
         setCurrentIndex(prev => prev + 1)
       }, 50)
 
       return () => clearTimeout(timer)
-    } else if (onComplete) {
-      onComplete()
+    } else {
+      if (onComplete) onComplete()
+      if (isTyping) {
+        stopTyping()
+        // 更新消息内容为当前已显示的内容
+        useChatStore.getState().updateLastMessage(displayedContent)
+      }
     }
-  }, [content, currentIndex, onComplete, isLoading])
+  }, [content, currentIndex, onComplete, isLoading, isTyping, stopTyping, displayedContent])
 
+  // 总是返回当前已显示的内容
   return <span>{displayedContent}</span>
 } 
