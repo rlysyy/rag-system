@@ -38,7 +38,7 @@ export function Bubble({ message, isLast }: {
           )}
 
           <div className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm w-full",
+            "rounded-lg px-4 py-2.5 text-sm w-full",
             isUser ? "bg-primary text-primary-foreground" : "bg-muted"
           )}>
             <p className="whitespace-pre-wrap break-words">

@@ -8,12 +8,13 @@ export function TypewriterText({ content, onComplete }: {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
-    // 将字符串转换为数组，正确处理 emoji
-    const characters = Array.from(content)
+    // 使用 Intl.Segmenter 来正确分割包括 emoji 在内的所有字符
+    const segmenter = new Intl.Segmenter('zh', { granularity: 'grapheme' })
+    const segments = Array.from(segmenter.segment(content)).map(s => s.segment)
     
-    if (currentIndex < characters.length) {
+    if (currentIndex < segments.length) {
       const timer = setTimeout(() => {
-        setDisplayedContent(prev => prev + characters[currentIndex])
+        setDisplayedContent(prev => prev + segments[currentIndex])
         setCurrentIndex(prev => prev + 1)
       }, 50)
 
