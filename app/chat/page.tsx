@@ -1,17 +1,29 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import ChatLayout from '@/components/chat/ChatLayout';
+import { ChatLayout } from '@/components/chat/ChatLayout';
 import DataPage from '@/app/data/page';
 import { BarChart } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function ChatPage() {
   const [showDataPanel, setShowDataPanel] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <div className="h-screen flex">
-      <div className={`flex transition-all duration-300 ${showDataPanel ? 'w-1/2' : 'w-full'}`}>
+      {/* 聊天区域 */}
+      <div className={cn(
+        "transition-all duration-300 min-w-0",
+        showDataPanel ? "w-[50%]" : "w-full"
+      )}>
         <ChatLayout />
       </div>
 
@@ -26,8 +38,10 @@ export default function ChatPage() {
 
       {/* 数据面板 */}
       {showDataPanel && (
-        <div className="w-1/2 border-l bg-background">
-          <DataPage />
+        <div className="w-[50%] border-l bg-background custom-scrollbar">
+          <div className="min-w-0">
+            <DataPage />
+          </div>
         </div>
       )}
     </div>

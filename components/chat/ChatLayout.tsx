@@ -1,143 +1,69 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Bubble } from "./Bubble"
-import { Sender } from "@/components/chat/Sender"
+import { FC, useEffect, useState } from 'react'
+import { Bubble } from './Bubble'
+import { Sender } from './Sender'
+import { ChatSidebar } from './ChatSidebar'
+import { useChat } from '@/hooks/useChat'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-interface ChatLayoutProps {
-  showDataPanel?: boolean;
-}
+export function ChatLayout() {
+  const { messages, addMessage, isLoading } = useChat()
+  const [mounted, setMounted] = useState(false)
 
-export default function ChatLayout({ showDataPanel = false }: ChatLayoutProps) {
-  const [conversations, setConversations] = useState([
-    { id: '1', title: '对话 1' },
-    { id: '2', title: '对话 2' },
-  ])
-  const [activeConversation, setActiveConversation] = useState<string | null>('1')
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
-    { role: 'assistant', content: 'Hi! How can I help you today?' },
-    { role: 'user', content: 'Hello! I have some questions about React.' },
-    { role: 'assistant', content: 'Sure! I\'d be happy to help you with React. What would you like to know?' },
-  ])
-  const [isLoading, setIsLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  const handleNewConversation = () => {
-    const newConversation = { 
-      id: Date.now().toString(), 
-      title: `对话 ${conversations.length + 1}` 
-    }
-    setConversations((prev) => [...prev, newConversation])
-    setActiveConversation(newConversation.id)
-    setMessages([])
-  }
-
-  const handleSendMessage = async (content: string) => {
-    if (isLoading) return;
-    
-    setMessages(prev => [...prev, { role: 'user', content }]);
-    setIsLoading(true);
-    
-    // 创建新的 AbortController
-    abortControllerRef.current = new AbortController();
-
-    try {
-      // 模拟 API 调用，传入 signal
-      await new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(resolve, 3000);
-        abortControllerRef.current?.signal.addEventListener('abort', () => {
-          clearTimeout(timeoutId);
-          reject(new Error('Cancelled'));
-        });
-      });
-
-      const aiResponse = "This is a simulated response.";
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message === 'Cancelled') {
-        console.log('Request cancelled');
-      } else {
-        console.error('Error:', error);
-      }
-    } finally {
-      setIsLoading(false);
-      abortControllerRef.current = null;
-    }
-  };
-
-  const handleCancel = () => {
-    abortControllerRef.current?.abort();
-  };
+  if (!mounted) return null
 
   return (
-    <div className={`flex h-screen transition-all duration-300 ${showDataPanel ? 'w-1/2' : 'w-full'} p-2`}>
-      <div className="w-full h-full rounded-xl border bg-card shadow-sm flex">
-        {/* 左侧栏 */}
-        <div className="w-64 shrink-0 border-r">
-          <div className="p-4">
-            <Button onClick={handleNewConversation} className="w-full">
-              新建对话
-            </Button>
-          </div>
-          <Separator />
-          <div className="p-2 text-sm font-medium text-muted-foreground">
-            历史记录
-          </div>
-          <ScrollArea className="flex-1 px-2 pb-2">
-            {conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`p-2 rounded-lg cursor-pointer transition-colors ${
-                  activeConversation === conv.id
-                    ? 'bg-primary/10 text-foreground'
-                    : 'hover:bg-secondary'
-                }`}
-                onClick={() => setActiveConversation(conv.id)}
-              >
-                {conv.title}
-              </div>
-            ))}
-          </ScrollArea>
-        </div>
+    <div className="h-full flex">
+      <div className="h-full w-full p-4 min-w-0">
+        <div className="h-full rounded-lg border shadow-sm bg-background flex min-w-0">
+          {/* 左侧边栏 */}
+          <ChatSidebar />
 
-        {/* 右侧聊天窗口 */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 
-            [&::-webkit-scrollbar-track]:bg-transparent
-            [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20
-            [&::-webkit-scrollbar-thumb]:rounded-full
-            hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30">
-            <div className="max-w-4xl mx-auto py-4">
-              {messages.map((msg, index) => (
-                <div key={index} className="mb-6 px-4">
-                  <Bubble
-                    content={msg.content}
-                    role={msg.role}
-                    isLoading={false}
+          {/* 主聊天区域 */}
+          <div className="flex-1 flex flex-col border-l min-w-0">
+            {/* 消息列表区域 */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <div className="w-full mx-auto p-4 space-y-6">
+                {messages.map((message, index) => (
+                  <Bubble 
+                    key={index} 
+                    message={message} 
+                    isLast={index === messages.length - 1 && message.role === 'assistant'}
                   />
-                </div>
-              ))}
-              {isLoading && (
-                <div className="mb-6 px-4">
-                  <Bubble
-                    content=""
-                    role="assistant"
-                    isLoading={true}
-                  />
-                </div>
-              )}
+                ))}
+                {isLoading && (
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="/avatars/bot-avatar.svg" alt="AI" />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                    <div className="flex gap-1.5 h-4 items-center">
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                      <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="p-4">
-            <div className="max-w-4xl mx-auto">
-              <Sender 
-                onSend={handleSendMessage} 
-                isLoading={isLoading}
-                onCancel={handleCancel}
-              />
+
+            {/* 发送消息区域 */}
+            <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="w-full max-w-[1200px] mx-auto">
+                <Sender 
+                  onSend={content => addMessage({ 
+                    role: 'user', 
+                    content,
+                    timestamp: new Date()
+                  })}
+                  isLoading={isLoading}
+                />
+              </div>
             </div>
           </div>
         </div>

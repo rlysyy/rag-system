@@ -79,3 +79,24 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* 自定义滚动条样式 */
+@layer utilities {
+  .custom-scrollbar {
+    @apply overflow-y-auto overflow-x-hidden;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--secondary)) hsl(var(--secondary) / 0.2);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-2 h-0; /* 设置横向滚动条高度为0 */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-secondary/20;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-secondary hover:bg-secondary/80 rounded-full transition-colors;
+  }
+}
