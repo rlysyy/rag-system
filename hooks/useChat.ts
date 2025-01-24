@@ -31,13 +31,11 @@ const safeJSONParse = (str: string | null, fallback: any = []) => {
 }
 
 export function useChat() {
-  // 从 localStorage 获取或生成新的 chatId
-  const [currentChatId] = useState<string>(() => {
+  const [currentChatId, setCurrentChatId] = useState<string>(() => {
     if (typeof window === 'undefined') return crypto.randomUUID()
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       const messages = safeJSONParse(saved)
-      // 如果有用户消息，使用现有的对话
       const hasUserMessage = messages.some((msg: Message) => msg.role === 'user')
       if (hasUserMessage) {
         const history = safeJSONParse(localStorage.getItem(HISTORY_KEY))
@@ -130,45 +128,121 @@ export function useChat() {
     }])
     
     if (message.role === 'user') {
+      // 检查是否是当前对话的第一条用户消息
+      const isFirstUserMessage = !messages.some(m => m.role === 'user')
+      
+      if (isFirstUserMessage) {
+        // 立即创建并添加到对话历史
+        const title = message.content.slice(0, 30) + (message.content.length > 30 ? '...' : '')
+        setChatHistory(prev => [{
+          id: currentChatId,
+          title,
+          timestamp: new Date()
+        }, ...prev.slice(0, 19)]) // 保持最多20条记录
+      }
+
+      // 保存当前对话的消息
+      const updatedMessages = [...messages, message]
+      localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(updatedMessages))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMessages))
+
       setIsLoading(true)
       try {
         await new Promise(resolve => setTimeout(resolve, 1000))
         const response = getMockResponse()
         
-        setMessages(prev => [...prev, {
-          role: 'assistant',
+        const newMessage = {
+          role: 'assistant' as const,
           content: response.content,
           timestamp: new Date(),
           references: response.references
-        }])
+        }
+
+        setMessages(prev => [...prev, newMessage])
+        
+        // 更新存储
+        const allMessages = [...updatedMessages, newMessage]
+        localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(allMessages))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(allMessages))
       } catch (error) {
         console.error('Failed to get response:', error)
       } finally {
         setIsLoading(false)
       }
     }
-  }, [])
+  }, [messages, currentChatId])
 
   const clearMessages = useCallback(() => {
-    setMessages([{
-      role: 'assistant',
+    // 生成新的对话ID
+    const newChatId = crypto.randomUUID()
+    
+    // 如果当前对话有用户消息，保存到历史记录
+    const hasUserMessage = messages.some(m => m.role === 'user')
+    if (hasUserMessage) {
+      const firstUserMessage = messages.find(m => m.role === 'user')
+      if (firstUserMessage) {
+        const title = firstUserMessage.content.slice(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '')
+        const historyEntry = {
+          id: currentChatId,
+          title,
+          timestamp: new Date()
+        }
+        
+        // 保存当前对话消息
+        localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(messages))
+        
+        // 更新历史记录
+        setChatHistory(prev => {
+          const newHistory = prev.filter(h => h.id !== currentChatId)
+          return [historyEntry, ...newHistory].slice(0, 20)
+        })
+      }
+    }
+    
+    // 重置当前对话
+    const welcomeMessage = {
+      role: 'assistant' as const,
       content: '你好！我是AI助手，有什么我可以帮你的吗？',
       timestamp: new Date()
-    }])
-    // 不再需要设置 currentChatId，因为它是常量
-    try {
-      localStorage.removeItem(STORAGE_KEY)
-    } catch (e) {
-      console.error('Failed to clear messages:', e)
+    }
+    
+    // 直接更新状态
+    setCurrentChatId(newChatId)
+    setMessages([welcomeMessage])
+    
+    // 更新 localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([welcomeMessage]))
+    localStorage.removeItem(`messages-${newChatId}`)
+  }, [messages, currentChatId])
+
+  const loadChat = useCallback((chatId: string) => {
+    setCurrentChatId(chatId) // 更新当前对话ID
+    const savedMessages = localStorage.getItem(`messages-${chatId}`)
+    if (savedMessages) {
+      setMessages(convertDates(JSON.parse(savedMessages)))
+      localStorage.setItem(STORAGE_KEY, savedMessages)
     }
   }, [])
+
+  // 在组件顶部添加这个 effect
+  useEffect(() => {
+    if (messages.length === 0) {
+      const welcomeMessage = {
+        role: 'assistant' as const,
+        content: '你好！我是AI助手，有什么我可以帮你的吗？',
+        timestamp: new Date()
+      }
+      setMessages([welcomeMessage])
+    }
+  }, [messages])
 
   return {
     messages,
     addMessage,
     clearMessages,
+    loadChat,
     isLoading,
     currentChatId,
     chatHistory
   }
-} 
+}

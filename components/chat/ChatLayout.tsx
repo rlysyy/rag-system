@@ -1,14 +1,14 @@
 'use client'
 
-import { FC, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bubble } from './Bubble'
 import { Sender } from './Sender'
 import { ChatSidebar } from './ChatSidebar'
-import { useChat } from '@/hooks/useChat'
+import { useChatStore } from '@/store/chat'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function ChatLayout() {
-  const { messages, addMessage, isLoading } = useChat()
+  const { messages, addMessage, isLoading } = useChatStore()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -21,19 +21,21 @@ export function ChatLayout() {
     <div className="h-full flex">
       <div className="h-full w-full p-4 min-w-0">
         <div className="h-full rounded-lg border shadow-sm bg-background flex min-w-0">
-          {/* 左侧边栏 */}
           <ChatSidebar />
 
-          {/* 主聊天区域 */}
           <div className="flex-1 flex flex-col border-l min-w-0">
-            {/* 消息列表区域 */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <div className="w-full mx-auto p-4 space-y-6">
                 {messages.map((message, index) => (
-                  <Bubble 
+                  <Bubble
                     key={index} 
                     message={message} 
-                    isLast={index === messages.length - 1 && message.role === 'assistant'}
+                    isLast={index === messages.length - 1}
+                    isNewResponse={
+                      message.role === 'assistant' && 
+                      index === messages.length - 1 && 
+                      !isLoading
+                    }
                   />
                 ))}
                 {isLoading && (
@@ -52,17 +54,9 @@ export function ChatLayout() {
               </div>
             </div>
 
-            {/* 发送消息区域 */}
             <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="w-full max-w-[1200px] mx-auto">
-                <Sender 
-                  onSend={content => addMessage({ 
-                    role: 'user', 
-                    content,
-                    timestamp: new Date()
-                  })}
-                  isLoading={isLoading}
-                />
+                <Sender />
               </div>
             </div>
           </div>

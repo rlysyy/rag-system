@@ -8,10 +8,11 @@ export interface Message {
   content: string
   timestamp: Date
   references?: Reference[]
+  isSystemMessage?: boolean
 }
 
 export interface ChatContextType {
   messages: Message[]
   addMessage: (message: Message) => void
   isLoading: boolean
-} 
+}

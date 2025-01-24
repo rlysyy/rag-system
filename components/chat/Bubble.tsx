@@ -5,10 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TypewriterText } from './TypewriterText'
+import { useChatStore } from '@/store/chat'
 
-export function Bubble({ message, isLast }: { 
+export function Bubble({ message, isLast, isNewResponse }: { 
   message: Message
   isLast?: boolean 
+  isNewResponse?: boolean
 }) {
   const isUser = message.role === 'user'
   const references = message.references || []
@@ -42,7 +44,7 @@ export function Bubble({ message, isLast }: {
             isUser ? "bg-primary text-primary-foreground" : "bg-muted"
           )}>
             <p className="whitespace-pre-wrap break-words">
-              {isUser || !isLast ? (
+              {isUser || !isNewResponse ? (
                 message.content
               ) : (
                 <TypewriterText 
@@ -63,7 +65,7 @@ export function Bubble({ message, isLast }: {
       </div>
 
       {/* 引用文件列表 */}
-      {!isUser && references.length > 0 && isTypingComplete && (
+      {!isUser && references.length > 0 && (!isNewResponse || isTypingComplete) && (
         <div className="pl-11">
           <div className="w-[calc(100%-84px)] flex flex-col gap-2">
             {references.map((file, index) => (
