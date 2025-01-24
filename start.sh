@@ -1,11 +1,10 @@
 #!/bin/bash
 
-# 等待数据库就�?./wait-for-it.sh db:5432
+# 等待数据库准备就绪
+./wait-for-it.sh postgres:5432 -t 60
 
-# 执行 Prisma 迁移，使�?--skip-seed 避免重置数据
-echo "Running Prisma migrations..."
-npx prisma migrate deploy --skip-seed
+# 运行数据库迁移
+npx prisma migrate deploy
 
 # 启动应用
-echo "Starting application..."
 node server.js 

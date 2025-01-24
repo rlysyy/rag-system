@@ -1,6 +1,6 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next'
 
-const nextConfig: NextConfig = {
+const config: NextConfig = {
   /* config options here */
   output: 'standalone', // 将应用程序打包成一个独立的文件
   eslint: {
@@ -8,4 +8,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default config;
