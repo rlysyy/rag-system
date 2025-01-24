@@ -8,11 +8,14 @@ export function TypewriterText({ content, onComplete }: {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
-    if (currentIndex < content.length) {
+    // 将字符串转换为数组，正确处理 emoji
+    const characters = Array.from(content)
+    
+    if (currentIndex < characters.length) {
       const timer = setTimeout(() => {
-        setDisplayedContent(prev => prev + content[currentIndex])
+        setDisplayedContent(prev => prev + characters[currentIndex])
         setCurrentIndex(prev => prev + 1)
-      }, 50) // 从30ms调整到50ms，使打字速度更自然
+      }, 50)
 
       return () => clearTimeout(timer)
     } else if (onComplete) {
