@@ -1,11 +1,9 @@
 'use client'
 
 import { useSignUp } from '@/hooks/auth/useSignUp'
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -24,48 +22,62 @@ export default function SignUpForm() {
         e.preventDefault()
         handleSignUp(new FormData(e.currentTarget))
       }}>
-        <div className="grid gap-2">
-          <div className="grid gap-2">
-            <Label htmlFor="name">用户名</Label>
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center gap-4">
+            <div className="w-24">
+              <Label htmlFor="name" className="block text-right">用户名</Label>
+            </div>
             <Input
               id="name"
               name="name"
               type="text"
+              className="flex-1"
               required
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">邮箱</Label>
+          <div className="flex items-center gap-4">
+            <div className="w-24">
+              <Label htmlFor="email" className="block text-right">电子邮箱</Label>
+            </div>
             <Input
               id="email"
               name="email"
               type="email"
+              className="flex-1"
               placeholder="your.name@company.com"
               required
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">密码</Label>
+          <div className="flex items-center gap-4">
+            <div className="w-24">
+              <Label htmlFor="password" className="block text-right">登录密码</Label>
+            </div>
             <Input 
               id="password"
               name="password" 
-              type="password" 
+              type="password"
+              className="flex-1"
               required 
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="confirmPassword">确认密码</Label>
+          <div className="flex items-center gap-4">
+            <div className="w-24">
+              <Label htmlFor="confirmPassword" className="block text-right">确认密码</Label>
+            </div>
             <Input 
               id="confirmPassword"
               name="confirmPassword" 
-              type="password" 
+              type="password"
+              className="flex-1"
               required 
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="role">角色</Label>
+          <div className="flex items-center gap-4">
+            <div className="w-24">
+              <Label htmlFor="role" className="block text-right">用户角色</Label>
+            </div>
             <Select name="role" defaultValue="USER">
-              <SelectTrigger>
+              <SelectTrigger className="flex-1">
                 <SelectValue placeholder="选择角色" />
               </SelectTrigger>
               <SelectContent>
@@ -79,14 +91,16 @@ export default function SignUpForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <LoadingButton 
-            type="submit"
-            className="w-full"
-            isLoading={isLoading}
-            loadingText="注册中..."
-          >
-            注册
-          </LoadingButton>
+          <div className="pt-2 pl-28">
+            <LoadingButton 
+              type="submit"
+              className="w-[calc(100%-1rem)]"
+              isLoading={isLoading}
+              loadingText="注册中..."
+            >
+              注册
+            </LoadingButton>
+          </div>
         </div>
       </form>
     </div>

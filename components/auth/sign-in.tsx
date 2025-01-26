@@ -15,8 +15,8 @@ export default function SignInForm() {
         e.preventDefault()
         handleSignIn(new FormData(e.currentTarget))
       }}>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-2">
             <Label htmlFor="email">邮箱</Label>
             <Input
               id="email"
@@ -26,7 +26,7 @@ export default function SignInForm() {
               required
             />
           </div>
-          <div className="grid gap-2">
+          <div className="flex flex-col space-y-2">
             <Label htmlFor="password">密码</Label>
             <Input 
               id="password"
