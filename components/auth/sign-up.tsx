@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { LoadingButton } from "@/components/ui/loading-button"
 
 export default function SignUpForm() {
   const { error, isLoading, handleSignUp } = useSignUp()
@@ -23,7 +24,7 @@ export default function SignUpForm() {
         e.preventDefault()
         handleSignUp(new FormData(e.currentTarget))
       }}>
-        <div className="grid gap-4">
+        <div className="grid gap-2">
           <div className="grid gap-2">
             <Label htmlFor="name">用户名</Label>
             <Input
@@ -78,20 +79,14 @@ export default function SignUpForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Button 
-            type="submit" 
+          <LoadingButton 
+            type="submit"
             className="w-full"
-            disabled={isLoading}
+            isLoading={isLoading}
+            loadingText="注册中..."
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                注册中...
-              </>
-            ) : (
-              '注册'
-            )}
-          </Button>
+            注册
+          </LoadingButton>
         </div>
       </form>
     </div>

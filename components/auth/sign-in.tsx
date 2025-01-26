@@ -1,13 +1,13 @@
 'use client'
 
 import { useSignIn } from '@/hooks/auth/useSignIn'
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { LoadingButton } from "@/components/ui/loading-button"
 
 export default function SignInForm() {
-  const { error, handleSignIn } = useSignIn()
+  const { error, isLoading, handleSignIn } = useSignIn()
   
   return (
     <div>
@@ -15,8 +15,8 @@ export default function SignInForm() {
         e.preventDefault()
         handleSignIn(new FormData(e.currentTarget))
       }}>
-        <div className="relative grid gap-4">
-          <div className="relative grid gap-2">
+        <div className="grid gap-4">
+          <div className="grid gap-2">
             <Label htmlFor="email">邮箱</Label>
             <Input
               id="email"
@@ -26,7 +26,7 @@ export default function SignInForm() {
               required
             />
           </div>
-          <div className="relative grid gap-2">
+          <div className="grid gap-2">
             <Label htmlFor="password">密码</Label>
             <Input 
               id="password"
@@ -40,9 +40,16 @@ export default function SignInForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Button type="submit" className="relative w-full">
-            登录
-          </Button>
+          <div className="pt-2">
+            <LoadingButton 
+              type="submit"
+              className="w-full"
+              isLoading={isLoading}
+              loadingText="登录中..."
+            >
+              登录
+            </LoadingButton>
+          </div>
         </div>
       </form>
     </div>

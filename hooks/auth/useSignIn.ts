@@ -11,9 +11,12 @@ const loginSchema = z.object({
 export function useSignIn() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   
   const handleSignIn = async (formData: FormData) => {
     setError(null)
+    setIsLoading(true)
+    
     const data = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
@@ -30,12 +33,7 @@ export function useSignIn() {
       if (result?.error) {
         setError(result.error)
       } else {
-        const user = await fetch('/api/auth/user').then(res => res.json())
-        if (user.role === 'ADMIN') {
-          router.push('/admin')
-        } else {
-          router.push('/')
-        }
+        router.push('/')
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -43,11 +41,14 @@ export function useSignIn() {
       } else {
         setError('登录失败，请重试')
       }
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return {
     error,
+    isLoading,
     handleSignIn
   }
 } 
