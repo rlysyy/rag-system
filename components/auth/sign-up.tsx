@@ -1,77 +1,38 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
+import { useSignUp } from '@/hooks/auth/useSignUp'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { z } from 'zod'
-
-const signUpSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
-  password: z.string().min(5, '密码至少需要 5 个字符'),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "两次输入的密码不一致",
-  path: ["confirmPassword"],
-})
+import { Loader2 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function SignUpForm() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError(null)
-
-    const formData = new FormData(e.currentTarget)
-    const data = {
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-      confirmPassword: formData.get('confirmPassword') as string,
-    }
-
-    try {
-      signUpSchema.parse(data)
-      
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || '注册失败')
-      }
-
-      router.push('/login')
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        setError(error.errors[0].message)
-      } else if (error instanceof Error) {
-        setError(error.message)
-      } else {
-        setError('注册失败，请重试')
-      }
-    }
-  }
+  const { error, isLoading, handleSignUp } = useSignUp()
 
   return (
-    <div className="flex flex-col space-y-8">
-      <div className="flex flex-col space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">创建账户</h1>
-        <p className="text-2xl font-medium text-muted-foreground">
-          智能工厂知识库系统
-        </p>
-      </div>
-      <form onSubmit={handleSubmit}>
+    <div>
+      <form onSubmit={(e) => {
+        e.preventDefault()
+        handleSignUp(new FormData(e.currentTarget))
+      }}>
         <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">用户名</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+            />
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="email">邮箱</Label>
             <Input
@@ -100,13 +61,36 @@ export default function SignUpForm() {
               required 
             />
           </div>
+          <div className="grid gap-2">
+            <Label htmlFor="role">角色</Label>
+            <Select name="role" defaultValue="USER">
+              <SelectTrigger>
+                <SelectValue placeholder="选择角色" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USER">普通用户</SelectItem>
+                <SelectItem value="ADMIN">管理员</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Button type="submit" className="w-full">
-            注册
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                注册中...
+              </>
+            ) : (
+              '注册'
+            )}
           </Button>
         </div>
       </form>
