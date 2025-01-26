@@ -1,5 +1,5 @@
 import SignInForm from '@/components/auth/sign-in'
-import { ThemeToggle } from '@/components/auth/theme-toggle'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 
 export default function LoginPage() {
   return (
