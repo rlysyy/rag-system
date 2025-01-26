@@ -12,6 +12,9 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   })
+  
+  console.log('Token in middleware:', token) // 添加调试日志
+  
   const { pathname } = request.nextUrl
 
   // 管理员路由保护
@@ -19,9 +22,9 @@ export async function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-    // 验证是否是管理员
-    const user = await fetch(`${request.url}/api/auth/user`).then(res => res.json())
-    if (user.role !== 'ADMIN') {
+    // 直接从 token 中获取角色信息
+    if (token.role !== 'ADMIN') {
+      console.log('User role:', token.role) // 添加调试日志
       return NextResponse.redirect(new URL('/', request.url))
     }
   }

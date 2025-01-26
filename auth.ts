@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import type { Role } from '@/types/next-auth'
 
 const prisma = new PrismaClient()
 
@@ -15,13 +16,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: {},
       },
       authorize: async (credentials) => {
-        let user = null
-
-         if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email || !credentials?.password) {
           throw new Error('请输入邮箱和密码')
         }
 
-        user = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         })
 
@@ -38,21 +37,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error('密码错误')
         }
 
-        return { ...user, id: user.id.toString() }
+        return {
+          id: user.id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role as Role
+        }
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id // 将用户ID 写入 token
-        token.email = user.email // 将用户邮箱写入 token
+        token.id = user.id
+        token.email = user.email
+        token.role = user.role as Role
       }
       return token
     },
     async session({ session, token }) {
-      session.user.id = token.id as string // 将token 中的用户 ID 写入 session
-      session.user.email = token.email as string // 将token 中的用户邮箱写入 session
+      session.user.id = token.id as string
+      session.user.email = token.email as string
+      session.user.role = token.role as Role
+      console.log('Session callback:', { session, token })
       return session
     },
   },

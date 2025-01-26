@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from 'next/font/local';
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider"
+import SessionProvider from "@/components/providers/session-provider"
 
 // 定义字体
 const notoSans = localFont({
@@ -35,15 +36,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${notoSans.variable} ${notoSansSC.variable} ${notoSansJP.variable}`}>
-        <ThemeProvider 
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-          storageKey="theme"
-        >
-          {children}
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider 
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+            storageKey="theme"
+          >
+            {children}
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )
