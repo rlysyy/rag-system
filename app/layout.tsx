@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import SessionProvider from "@/components/providers/session-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 // 定义字体
 const notoSans = localFont({
@@ -47,6 +48,7 @@ export default function RootLayout({
             {children}
           </ThemeProvider>
         </SessionProvider>
+        <Toaster />
       </body>
     </html>
   )

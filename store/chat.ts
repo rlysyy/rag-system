@@ -1,31 +1,11 @@
+'use client'
+
 import { create } from 'zustand'
-import { StateCreator } from 'zustand'
-import type { Message } from '@/types/chat'
-import { getMockResponse } from '@/lib/mockData/ai-responses'
+import type { Message, ChatStore, ChatHistory } from '@/types/chat'
+import { getCompletion } from '@/services/api'
+import { STORAGE_KEYS } from '@/constants/storage'
 
-interface ChatHistory {
-  id: string
-  title: string
-  timestamp: Date
-}
-
-interface ChatStore {
-  messages: Message[]
-  currentChatId: string
-  chatHistory: ChatHistory[]
-  isLoading: boolean
-  stopGeneration: boolean
-  isTyping: boolean
-  stoppedContent: Record<string, string>
-  addMessage: (message: Message) => Promise<void>
-  clearMessages: () => void
-  loadChat: (chatId: string) => void
-  setStopGeneration: (stop: boolean) => void
-  stopCurrentResponse: () => void
-  stopTyping: () => void
-  updateLastMessage: (content: string) => void
-}
-
+// 工具函数：更新本地存储
 const updateLocalStorage = (key: string, value: any) => {
   try {
     localStorage.setItem(key, JSON.stringify(value))
@@ -34,24 +14,20 @@ const updateLocalStorage = (key: string, value: any) => {
   }
 }
 
-const STORAGE_KEY = 'chat-messages'
-const HISTORY_KEY = 'chat-history'
-
+// 工具函数：转换消息中的日期并过滤无效消息
 const convertDates = (messages: any[]): Message[] => {
   return messages
     .map(msg => ({
       ...msg,
       timestamp: new Date(msg.timestamp || Date.now())
     }))
-    // 修改过滤逻辑，保留已停止的消息
     .filter(msg => {
-      // 如果是用户消息，保留非空内容
+      // 用户消息：保留非空内容
       if (msg.role === 'user') {
         return msg.content.trim().length > 0
       }
-      // 如果是AI消息，检查内容
+      // AI消息：保留有内容或引用的消息
       if (msg.role === 'assistant') {
-        // 保留有内容的消息，包括已停止的消息
         const hasContent = msg.content.trim().length > 0
         const hasReferences = Array.isArray(msg.references) && msg.references.length > 0
         return hasContent || hasReferences
@@ -60,10 +36,11 @@ const convertDates = (messages: any[]): Message[] => {
     })
 }
 
+// 创建聊天状态管理store
 export const useChatStore = create<ChatStore>()((set, get) => ({
+  // 初始化消息列表
   messages: (() => {
-    if (typeof window === 'undefined') return []
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(STORAGE_KEYS.CHAT_MESSAGES)
     if (saved) {
       const messages = convertDates(JSON.parse(saved))
       // 如果只有一条空白的AI消息（没有引用），返回空数组
@@ -79,7 +56,6 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
       }
       return messages
     }
-    // 返回欢迎消息
     return [{
       role: 'assistant',
       content: '你好！我是AI助手，有什么我可以帮你的吗？',
@@ -87,34 +63,30 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
     }]
   })(),
 
-  currentChatId: (() => {
-    if (typeof window === 'undefined') return crypto.randomUUID()
-    return crypto.randomUUID()
-  })(),
+  // 生成当前会话ID
+  currentChatId: crypto.randomUUID(),
 
+  // 初始化聊天历史
   chatHistory: (() => {
-    if (typeof window === 'undefined') return []
-    const saved = localStorage.getItem(HISTORY_KEY)
-    return saved ? JSON.parse(saved).map((chat: any) => ({
-      ...chat,
-      timestamp: new Date(chat.timestamp)
-    })) : []
+    const saved = localStorage.getItem(STORAGE_KEYS.CHAT_HISTORY)
+    return saved ? JSON.parse(saved) : []
   })(),
 
+  // 状态标志
   isLoading: false,
-
   stopGeneration: false,
-
   isTyping: false,
 
+  // 存储已停止的消息内容
   stoppedContent: (() => {
-    if (typeof window === 'undefined') return {}
     const saved = localStorage.getItem('stopped-content')
     return saved ? JSON.parse(saved) : {}
   })(),
 
+  // 设置停止生成标志
   setStopGeneration: (stop: boolean) => set({ stopGeneration: stop }),
 
+  // 停止当前响应
   stopCurrentResponse: () => {
     const { messages } = get()
     const lastMessage = messages[messages.length - 1]
@@ -148,7 +120,7 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
       const updatedMessages = [...messages.slice(0, -1), updatedMessage]
       
       // 保存到消息存储
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMessages))
+      localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(updatedMessages))
       localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(updatedMessages))
       
       // 保存停止内容到单独的存储
@@ -156,10 +128,12 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
     }
   },
 
+  // 停止打字动画
   stopTyping: () => {
     set({ isTyping: false })
   },
 
+  // 添加新消息
   addMessage: async (message: Message) => {
     const { messages, currentChatId, stoppedContent } = get()
     set({ stopGeneration: false })
@@ -194,18 +168,22 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
         
         set({ chatHistory: newHistory })
         // 保存对话历史到本地存储
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory))
+        localStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(newHistory))
       }
 
       // 使用当前消息列表更新存储
       const updatedMessages = [...processedMessages, message]
       localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(updatedMessages))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMessages))
+      localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(updatedMessages))
 
       set({ isLoading: true })
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const response = getMockResponse()
+        const response = await getCompletion({
+          question: message.content,
+          stream: false,
+          session_id: currentChatId,
+          // user_id: session?.user?.id  // 如果需要的话
+        })
         
         if (get().stopGeneration) {
           return
@@ -219,106 +197,52 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
         }
 
         set({ isTyping: true })
-        // 使用最新的消息列表
         const latestMessages = get().messages
         set({ messages: [...latestMessages, newMessage] })
         
         // 更新存储
         const allMessages = [...latestMessages, newMessage]
-        localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(allMessages))
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allMessages))
+        localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(allMessages))
+        
+      } catch (error) {
+        console.error('API error:', error)
+        // 可以添加错误处理UI
       } finally {
         set({ isLoading: false })
       }
     }
   },
 
+  // 清空当前会话
   clearMessages: () => {
     const newChatId = crypto.randomUUID()
-    const { messages, currentChatId, chatHistory } = get()
-    
-    // 只有当前对话有用户消息时才保存到历史记录
-    const hasUserMessage = messages.some(m => m.role === 'user')
-    if (hasUserMessage) {
-      const firstUserMessage = messages.find(m => m.role === 'user')
-      if (firstUserMessage) {
-        const title = firstUserMessage.content.slice(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '')
-        
-        // 保存当前对话消息
-        localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(messages))
-        
-        // 更新历史记录
-        const newHistory = [{
-          id: currentChatId,
-          title,
-          timestamp: new Date()
-        }, ...chatHistory.filter(h => h.id !== currentChatId).slice(0, 19)]
-        
-        set({ chatHistory: newHistory })
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory))
-      }
-    }
-
-    // 设置欢迎消息
     const welcomeMessage = {
       role: 'assistant' as const,
       content: '你好！我是AI助手，有什么我可以帮你的吗？',
       timestamp: new Date()
     }
-
-    // 重置当前对话状态
-    set({
-      currentChatId: newChatId,
-      messages: [welcomeMessage]
-    })
-
-    // 更新存储
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([welcomeMessage]))
-    localStorage.removeItem(`messages-${newChatId}`) // 清除新对话的存储
+    set({ currentChatId: newChatId, messages: [welcomeMessage] })
+    localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify([welcomeMessage]))
   },
 
+  // 加载指定会话
   loadChat: (chatId: string) => {
     const savedMessages = localStorage.getItem(`messages-${chatId}`)
     if (savedMessages) {
       const messages = convertDates(JSON.parse(savedMessages))
-      // 只在有有效消息时加载
-      if (messages.length > 0) {
-        set({
-          currentChatId: chatId,
-          messages
-        })
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
-      }
+      set({ currentChatId: chatId, messages })
+      localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify(messages))
     }
   },
 
+  // 更新最后一条消息
   updateLastMessage: (content: string) => {
     const { messages } = get()
     const lastMessage = messages[messages.length - 1]
-    if (lastMessage && lastMessage.role === 'assistant') {
-      // 保存当前打字的内容
-      set(state => ({
-        stoppedContent: {
-          ...state.stoppedContent,
-          [lastMessage.timestamp.getTime()]: content
-        }
-      }))
-
-      // 只有在消息停止时才添加停止标记
-      const messageContent = content + (content.endsWith('这条消息已停止') ? '' : '\n\n这条消息已停止')
-      const updatedMessage = {
-        ...lastMessage,
-        content: messageContent,
-        references: []
-      }
-      set({
-        messages: [...messages.slice(0, -1), updatedMessage]
-      })
-      
-      // 更新本地存储
-      const currentChatId = get().currentChatId
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...messages.slice(0, -1), updatedMessage]))
-      localStorage.setItem(`messages-${currentChatId}`, JSON.stringify([...messages.slice(0, -1), updatedMessage]))
+    if (lastMessage?.role === 'assistant') {
+      const updatedMessage = { ...lastMessage, content }
+      set({ messages: [...messages.slice(0, -1), updatedMessage] })
+      localStorage.setItem(STORAGE_KEYS.CHAT_MESSAGES, JSON.stringify([...messages.slice(0, -1), updatedMessage]))
     }
   }
-})) 
+}))

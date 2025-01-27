@@ -9,7 +9,6 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    console.log('Session in admin page:', session)
     if (status === 'authenticated' && session?.user?.role !== 'ADMIN') {
       router.push('/')
     }
