@@ -7,7 +7,7 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
-  references?: Reference[]
+  references?: Array<{ id: string; name: string }>
   isSystemMessage?: boolean
 }
 
@@ -20,23 +20,24 @@ export interface ChatContextType {
 export interface ChatHistory {
   id: string
   title: string
+  lastMessage?: string
   timestamp: Date
 }
 
 export interface ChatStore {
   messages: Message[]
+  isLoading: boolean
+  isTyping: boolean
   currentChatId: string
   chatHistory: ChatHistory[]
-  isLoading: boolean
   stopGeneration: boolean
-  isTyping: boolean
   stoppedContent: Record<string, string>
   
   addMessage: (message: Message) => Promise<void>
   clearMessages: () => void
   loadChat: (chatId: string) => void
+  updateLastMessage: (content: string) => void
   setStopGeneration: (stop: boolean) => void
   stopCurrentResponse: () => void
   stopTyping: () => void
-  updateLastMessage: (content: string) => void
 }

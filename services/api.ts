@@ -11,26 +11,28 @@ interface CompletionRequest {
 
 interface CompletionResponse {
   content: string
-  references?: Array<{
+  references: Array<{
     id: string
     name: string
   }>
 }
 
+interface CompletionParams {
+  question: string
+  stream?: boolean
+  session_id?: string
+  user_id?: string
+}
+
 // API 调用函数
-export async function getCompletion(params: CompletionRequest): Promise<CompletionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/agents/${process.env.AGENT_ID}/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`
-    },
-    body: JSON.stringify(params)
+export async function getCompletion(params: CompletionParams): Promise<CompletionResponse> {
+  // 暂时返回模拟数据
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        content: "这是一个模拟的回复。",
+        references: []
+      })
+    }, 1000)  // 模拟1秒延迟
   })
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`)
-  }
-
-  return response.json()
 } 
