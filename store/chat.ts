@@ -47,7 +47,12 @@ const convertDates = (messages: any[]): Message[] => {
 
 // 创建聊天状态管理store
 export const useChatStore = create<ChatStore>()((set, get) => ({
-  messages: [],  // 恢复为空数组
+  messages: [{
+    role: 'assistant',
+    content: '你好！我是AI助手，有什么我可以帮你的吗？',
+    timestamp: new Date(),
+    references: []
+  }],
   isLoading: false,
   isTyping: false,
   currentChatId: 'default',
