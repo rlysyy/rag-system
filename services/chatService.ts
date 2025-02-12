@@ -37,5 +37,75 @@ export const chatService = {
 
   saveHistory: (history: ChatHistory[]) => {
     storage.set(STORAGE_KEYS.CHAT_HISTORY, history)
+  },
+
+  db: {
+    async saveMessage(sessionId: string, message: Message, userId: string) {
+      try {
+        const response = await fetch('/api/chat/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sessionId,
+            message,
+            userId
+          }),
+          credentials: 'include'
+        })
+        return await response.json()
+      } catch (error) {
+        console.error('Failed to save to DB:', error)
+        return null
+      }
+    },
+
+    async loadUserSessions(userId: string) {
+      try {
+        const response = await fetch(`/api/chat/sessions?userId=${userId}`, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        })
+        return await response.json()
+      } catch (error) {
+        console.error('Failed to load from DB:', error)
+        return []
+      }
+    },
+
+    async loadSessionMessages(sessionId: string) {
+      try {
+        const response = await fetch(`/api/chat/messages?sessionId=${sessionId}`, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        })
+        return await response.json()
+      } catch (error) {
+        console.error('Failed to load session messages:', error)
+        return []
+      }
+    },
+
+    async createSession(userId: string, title: string) {
+      try {
+        const response = await fetch('/api/chat/sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ userId, title }),
+          credentials: 'include'
+        })
+        return await response.json()
+      } catch (error) {
+        console.error('Failed to create session:', error)
+        return null
+      }
+    }
   }
 } 

@@ -5,7 +5,6 @@ import { Bubble } from './Bubble'
 import { Sender } from './Sender'
 import { ChatSidebar } from './ChatSidebar'
 import { useChatStore } from '@/store/chat'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function ChatLayout() {
   const { messages, addMessage, isLoading, isTyping } = useChatStore()

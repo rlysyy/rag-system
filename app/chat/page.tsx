@@ -6,6 +6,7 @@ import { ChatLayout } from '@/components/chat/ChatLayout';
 import dynamic from 'next/dynamic';
 import { BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useChat } from '@/hooks/useChat';
 
 // 动态导入数据面板组件，避免首次加载过大
 const DataPage = dynamic(() => import('@/app/data/page'), {
@@ -14,10 +15,15 @@ const DataPage = dynamic(() => import('@/app/data/page'), {
 })
 
 export default function ChatPage() {
+  console.log('ChatPage rendering...')  // 添加渲染日志
+
   // 控制数据面板显示状态
   const [showDataPanel, setShowDataPanel] = useState(false);
   // 用于处理客户端水合
   const [mounted, setMounted] = useState(false);
+
+  const { messages, addMessage, isLoading, currentChatId, chatHistory } = useChat();
+  console.log('useChat hook result:', { messages, currentChatId, chatHistory });  // 添加 hook 结果日志
 
   // 确保组件只在客户端渲染
   useEffect(() => {
