@@ -15,10 +15,34 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
   name      String
+  email     String   @unique
   password  String
   role      String   @default("USER")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ChatSession {
+  id          String    @id @default(cuid())
+  userId      String    // 关联用户
+  title       String    // 会话标题
+  lastMessage String    // 最后一条消息
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[] // 关联消息
+
+  @@index([userId])
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  sessionId   String      // 关联会话
+  role        String      // user 或 assistant
+  content     String      @db.Text  // 消息内容
+  references  Json?       // 引用内容，使用 JSON 类型存储
+  createdAt   DateTime    @default(now())
+  chatSession ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
