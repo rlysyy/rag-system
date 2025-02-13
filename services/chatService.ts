@@ -11,7 +11,10 @@ export const chatService = {
       
       const savedHistory = storage.get(STORAGE_KEYS.CHAT_HISTORY)
       const chatHistory = savedHistory ? 
-        JSON.parse(savedHistory) : []
+        JSON.parse(savedHistory).map((chat: any) => ({
+          ...chat,
+          timestamp: new Date(chat.timestamp)
+        })) : []
       
       const savedMessages = storage.get(`${STORAGE_KEYS.CHAT_MESSAGES}-${currentChatId}`)
       const messages = savedMessages ? 
@@ -31,12 +34,12 @@ export const chatService = {
     }
   },
 
-  saveMessages: (currentChatId: string, messages: Message[]) => {
-    storage.set(`${STORAGE_KEYS.CHAT_MESSAGES}-${currentChatId}`, messages)
+  saveMessages: (chatId: string, messages: Message[]) => {
+    storage.set(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`, JSON.stringify(messages))
   },
 
   saveHistory: (history: ChatHistory[]) => {
-    storage.set(STORAGE_KEYS.CHAT_HISTORY, history)
+    storage.set(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(history))
   },
 
   db: {

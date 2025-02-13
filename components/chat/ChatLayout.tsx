@@ -14,7 +14,9 @@ export function ChatLayout() {
     setMounted(true)
   }, [])
 
-  if (!mounted) return null
+  if (!mounted) {
+    return null // 或者返回一个加载占位符
+  }
 
   return (
     // 主布局容器

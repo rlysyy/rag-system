@@ -1,22 +1,30 @@
 'use client'
 
-import { FC, useState, FormEvent, useRef, useEffect } from 'react'
+import { useState, FormEvent, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send } from 'lucide-react'
 import { useChatStore } from '@/store/chat'
-import { useChat } from '@/hooks/useChat'
 import type { Message } from '@/types/chat'
 import { useSession } from 'next-auth/react'
 
+/**
+ * 消息发送组件
+ * 包含文本输入区域和发送按钮
+ */
 export function Sender() {
-  const { addMessage, isLoading, stopCurrentResponse, isTyping, stopTyping } = useChatStore()
-  const chatHook = useChat()
+  // 从 store 获取状态和方法
+  const { addMessage, isLoading } = useChatStore()
+  const { data: session } = useSession()
+  
+  // 本地状态
   const [content, setContent] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { data: session } = useSession()
 
-  // 自动调整高度
+  /**
+   * 自动调整文本区域高度
+   * 最小高度 56px，最大高度 200px
+   */
   const adjustHeight = () => {
     const textarea = textareaRef.current
     if (textarea) {
@@ -26,36 +34,36 @@ export function Sender() {
     }
   }
 
+  // 监听内容变化，调整高度
   useEffect(() => {
     adjustHeight()
   }, [content])
 
+  /**
+   * 发送消息处理函数
+   */
   const handleSend = () => {
-    console.log('Sender handleSend called with:', content)
     if (!content.trim() || isLoading) return
     
     const message: Message = {
-      role: 'user' as const,
+      role: 'user',
       content: content.trim(),
       timestamp: new Date()
     }
     
-    console.log('Sender session:', session)
     addMessage(message, session)
     setContent('')
   }
 
+  /**
+   * 键盘事件处理
+   * Enter 发送，Shift+Enter 换行
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Form submitted')  // 添加日志
-    handleSend()
   }
 
   return (

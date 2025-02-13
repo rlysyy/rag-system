@@ -7,8 +7,7 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
-  references?: Array<{ id: string; name: string }>
-  isSystemMessage?: boolean
+  references?: any[]
 }
 
 export interface ChatContextType {
@@ -20,8 +19,8 @@ export interface ChatContextType {
 export interface ChatHistory {
   id: string
   title: string
-  lastMessage?: string
   timestamp: Date
+  lastMessage?: string
 }
 
 export interface ChatStore {
@@ -35,10 +34,12 @@ export interface ChatStore {
   saveTimeout?: NodeJS.Timeout
   
   addMessage: (message: Message, userSession?: any) => Promise<void>
-  clearMessages: () => void
-  loadChat: (chatId: string) => void
   updateLastMessage: (content: string) => void
+  loadChat: (chatId: string, userSession?: any) => Promise<void>
+  clearMessages: () => Promise<void>
   setStopGeneration: (stop: boolean) => void
   stopCurrentResponse: () => void
   stopTyping: () => void
+  setMessages: (messages: Message[]) => void
+  setChatHistory: (history: ChatHistory[]) => void
 }

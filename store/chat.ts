@@ -7,7 +7,13 @@ import { chatService } from '@/services/chatService'
 
 // 创建聊天状态管理store
 export const useChatStore = create<ChatStore>()((set, get) => {
-  const { messages, chatHistory, currentChatId } = chatService.initialize()
+  const { messages, chatHistory, currentChatId } = typeof window === 'undefined' 
+    ? { 
+        messages: [], 
+        chatHistory: [], 
+        currentChatId: '' 
+      }
+    : chatService.initialize()
 
   let lastSavedContent = ''  // 用于跟踪最后保存的内容
 
@@ -152,12 +158,58 @@ export const useChatStore = create<ChatStore>()((set, get) => {
       }
     },
 
-    clearMessages: () => {
-      // 简化的清除逻辑
+    // 加载指定会话
+    loadChat: async (chatId: string, userSession?: any) => {
+      set({ currentChatId: chatId })
+      
+      if (userSession?.user?.id) {
+        try {
+          const dbMessages = await chatService.db.loadSessionMessages(chatId)
+          if (dbMessages && dbMessages.length > 0) {
+            set({ messages: dbMessages })
+            chatService.saveMessages(chatId, dbMessages)
+          }
+        } catch (error) {
+          console.error('Failed to load chat:', error)
+        }
+      }
     },
 
-    loadChat: (chatId: string) => {
-      // 简化的加载逻辑
+    // 清除当前会话
+    clearMessages: async () => {
+      const { messages, currentChatId, chatHistory } = get()
+      const newChatId = crypto.randomUUID()
+
+      // 如果当前会话有内容，保存到历史
+      if (messages.some(m => m.role === 'user')) {
+        const firstUserMessage = messages.find(m => m.role === 'user')
+        if (firstUserMessage) {
+          const title = firstUserMessage.content.slice(0, 30)
+          chatService.saveMessages(currentChatId, messages)
+          
+          set(state => ({
+            chatHistory: [
+              { id: currentChatId, title, timestamp: new Date() },
+              ...state.chatHistory.filter(h => h.id !== currentChatId)
+            ]
+          }))
+        }
+      }
+
+      // 创建新会话
+      const welcomeMessage = {
+        role: 'assistant' as const,
+        content: '你好！我是AI助手，有什么我可以帮你的吗？',
+        timestamp: new Date(),
+        references: []
+      }
+
+      set({
+        currentChatId: newChatId,
+        messages: [welcomeMessage]
+      })
+
+      chatService.saveMessages(newChatId, [welcomeMessage])
     },
 
     updateLastMessage: (content: string) => {
@@ -169,6 +221,15 @@ export const useChatStore = create<ChatStore>()((set, get) => {
         set({ messages: newMessages })
         chatService.saveMessages(currentChatId, newMessages)
       }
+    },
+
+    setMessages: (messages: Message[]) => {
+      set({ messages })
+    },
+    
+    setChatHistory: (history: ChatHistory[]) => {
+      set({ chatHistory: history })
+      chatService.saveHistory(history)
     },
 
     // ... 其他必要方法

@@ -1,39 +1,49 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChatLayout } from '@/components/chat/ChatLayout';
-import dynamic from 'next/dynamic';
-import { BarChart } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useChat } from '@/hooks/useChat';
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { Button } from '@/components/ui/button'
+import { ChatLayout } from '@/components/chat/ChatLayout'
+import { BarChart } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useChatStore } from '@/store/chat'
+import { chatService } from '@/services/chatService'
+import dynamic from 'next/dynamic'
 
-// 动态导入数据面板组件，避免首次加载过大
+// 动态导入数据面板组件
 const DataPage = dynamic(() => import('@/app/data/page'), {
-  ssr: false,  // 禁用服务端渲染
+  ssr: false,
   loading: () => <div className="w-full h-full flex items-center justify-center">加载中...</div>
 })
 
 export default function ChatPage() {
-  console.log('ChatPage rendering...')  // 添加渲染日志
-
+  const { data: session } = useSession()
+  const { chatHistory, setChatHistory } = useChatStore()
+  
   // 控制数据面板显示状态
-  const [showDataPanel, setShowDataPanel] = useState(false);
-  // 用于处理客户端水合
-  const [mounted, setMounted] = useState(false);
+  const [showDataPanel, setShowDataPanel] = useState(false)
 
-  const { messages, addMessage, isLoading, currentChatId, chatHistory } = useChat();
-  console.log('useChat hook result:', { messages, currentChatId, chatHistory });  // 添加 hook 结果日志
-
-  // 确保组件只在客户端渲染
+  // 初始化：从数据库加载用户的聊天历史
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    async function loadUserData() {
+      if (session?.user?.id) {
+        try {
+          const dbSessions = await chatService.db.loadUserSessions(session.user.id)
+          if (dbSessions?.length > 0) {
+            setChatHistory(dbSessions)
+          }
+        } catch (error) {
+          console.error('Failed to load user sessions:', error)
+        }
+      }
+    }
 
-  if (!mounted) return null;
+    if (chatHistory.length === 0) {
+      loadUserData()
+    }
+  }, [session, chatHistory.length, setChatHistory])
 
   return (
-    // 主布局容器
     <div className="h-screen flex overflow-hidden">
       {/* 聊天区域容器 */}
       <div className="w-full">
@@ -72,5 +82,5 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
