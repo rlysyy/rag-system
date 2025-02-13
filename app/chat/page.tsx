@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils'
 import { useChatStore } from '@/store/chat'
 import { chatService } from '@/services/chatService'
 import dynamic from 'next/dynamic'
+import { storage } from '@/lib/storage'
+import { STORAGE_KEYS } from '@/constants/storage'
 
 // 动态导入数据面板组件
 const DataPage = dynamic(() => import('@/app/data/page'), {
@@ -18,12 +20,12 @@ const DataPage = dynamic(() => import('@/app/data/page'), {
 
 export default function ChatPage() {
   const { data: session } = useSession()
-  const { chatHistory, setChatHistory } = useChatStore()
+  const { chatHistory, setChatHistory, loadChat } = useChatStore()
   
   // 控制数据面板显示状态
   const [showDataPanel, setShowDataPanel] = useState(false)
 
-  // 初始化：从数据库加载用户的聊天历史
+  // 初始化：从数据库加载用户的聊天历史和最后的会话
   useEffect(() => {
     async function loadUserData() {
       if (session?.user?.id) {
@@ -31,6 +33,11 @@ export default function ChatPage() {
           const dbSessions = await chatService.db.loadUserSessions(session.user.id)
           if (dbSessions?.length > 0) {
             setChatHistory(dbSessions)
+            // 获取最后一次会话ID
+            const lastChatId = storage.get(STORAGE_KEYS.LAST_CHAT_ID)
+            if (lastChatId) {
+              await loadChat(lastChatId, session)
+            }
           }
         } catch (error) {
           console.error('Failed to load user sessions:', error)
@@ -41,7 +48,7 @@ export default function ChatPage() {
     if (chatHistory.length === 0) {
       loadUserData()
     }
-  }, [session, chatHistory.length, setChatHistory])
+  }, [session, chatHistory.length, setChatHistory, loadChat])
 
   return (
     <div className="h-screen flex overflow-hidden">

@@ -4,6 +4,8 @@ import { create } from 'zustand'
 import type { Message, ChatStore, ChatHistory } from '@/types/chat'
 import { createSession, converseWithAgent } from '@/services/agent'
 import { chatService } from '@/services/chatService'
+import { storage } from '@/lib/storage'
+import { STORAGE_KEYS } from '@/constants/storage'
 
 // 创建聊天状态管理store
 export const useChatStore = create<ChatStore>()((set, get) => {
@@ -52,12 +54,9 @@ export const useChatStore = create<ChatStore>()((set, get) => {
             await chatService.db.saveMessage(currentChatId, message, userSession.user.id)
           }
 
-          // 立即添加用户消息
+          // 只添加用户消息，不设置 loading
           const updatedMessages = [...currentMessages, message]
-          set({ 
-            messages: updatedMessages,
-            isLoading: false  // 用户消息不需要 loading
-          })
+          set({ messages: updatedMessages })
 
           // 创建新的会话
           const agentId = process.env.NEXT_PUBLIC_AGENT_ID
@@ -65,7 +64,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
           const sessionResponse = await createSession(agentId)
           const sessionId = sessionResponse.data.id
 
-          // 添加空的 AI 消息
+          // 添加空的 AI 消息，并设置 loading 状态
           const aiMessage: Message = {
             role: 'assistant',
             content: '',
@@ -73,10 +72,10 @@ export const useChatStore = create<ChatStore>()((set, get) => {
             references: []
           }
 
-          // 添加 AI 消息并开始流式响应
+          // 在添加 AI 消息时设置 loading
           set(state => ({ 
             messages: [...state.messages, aiMessage],
-            isTyping: true  // 开始打字效果
+            isLoading: true  // 在这里设置 loading
           }))
 
           let isFirstChunk = true
@@ -97,18 +96,19 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                 const lastMessage = newMessages[newMessages.length - 1]
                 
                 if (lastMessage?.role === 'assistant') {
-                  // 第一个数据块，直接设置内容
+                  // 第一个数据块，设置内容并开始打字效果
                   if (isFirstChunk) {
                     isFirstChunk = false
                     lastMessage.content = answer
                     lastMessage.references = references || []
                     return {
                       messages: newMessages,
-                      isTyping: true
+                      isTyping: true,
+                      isLoading: false  // 确保关闭 loading
                     }
                   }
 
-                  // 后续数据块，只有在内容变长时更新
+                  // 后续数据块，累积内容
                   if (answer.length > lastMessage.content.length) {
                     lastMessage.content = answer
                     lastMessage.references = references || []
@@ -121,15 +121,14 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                           lastSavedContent = answer
                           chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
                             .catch(error => console.error('Failed to save AI message:', error))
-                          set({ isTyping: false })
+                          set({ isTyping: false })  // 只在最后关闭打字效果
                         }
                       }
                     }, 1000)
 
                     return {
                       messages: newMessages,
-                      saveTimeout,
-                      isTyping: true
+                      saveTimeout
                     }
                   }
                 }
@@ -161,6 +160,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
     // 加载指定会话
     loadChat: async (chatId: string, userSession?: any) => {
       set({ currentChatId: chatId })
+      storage.set(STORAGE_KEYS.LAST_CHAT_ID, chatId) // 保存最后访问的会话ID
       
       if (userSession?.user?.id) {
         try {
