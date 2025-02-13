@@ -26,14 +26,15 @@ export interface ChatHistory {
 
 export interface ChatStore {
   messages: Message[]
+  chatHistory: ChatHistory[]
+  currentChatId: string
   isLoading: boolean
   isTyping: boolean
-  currentChatId: string
-  chatHistory: ChatHistory[]
   stopGeneration: boolean
   stoppedContent: Record<string, string>
+  saveTimeout?: NodeJS.Timeout
   
-  addMessage: (message: Message) => Promise<void>
+  addMessage: (message: Message, userSession?: any) => Promise<void>
   clearMessages: () => void
   loadChat: (chatId: string) => void
   updateLastMessage: (content: string) => void

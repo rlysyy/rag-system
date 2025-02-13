@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from "@/auth"
 
 /**
  * 获取聊天会话列表
@@ -40,28 +41,39 @@ export async function GET(req: Request) {
  * @returns 返回新创建的会话信息
  */
 export async function POST(req: Request) {
-  // 解析请求体获取必需参数
-  const { userId, title } = await req.json()
+  console.log('POST /api/chat/sessions called') // 添加日志
   
-  // 验证必需参数
-  if (!userId || !title) {
-    return new NextResponse('Missing parameters', { status: 400 })
+  const session = await auth()
+  console.log('Auth session:', session) // 添加日志
+  
+  if (!session?.user?.id) {
+    console.log('No auth session found') // 添加日志
+    return new NextResponse('Unauthorized', { status: 401 })
   }
 
   try {
-    // 在数据库中创建新会话
-    const newSession = await prisma.chatSession.create({
+    const body = await req.json()
+    console.log('Request body:', body) // 添加日志
+    
+    const { title } = body
+    if (!title) {
+      return new NextResponse('Missing title', { status: 400 })
+    }
+
+    const chatSession = await prisma.chatSession.create({
       data: {
-        userId,
+        userId: session.user.id,
         title,
-        lastMessage: ''  // 初始化最后消息为空
+        lastMessage: title // 添加初始最后消息
       }
     })
-    return NextResponse.json(newSession)
-  } catch (error) {
+    
+    console.log('Created session:', chatSession) // 添加日志
+    return NextResponse.json(chatSession)
+  } catch (error: any) {
     console.error('Failed to create session:', error)
-    return NextResponse.json(
-      { error: 'Database error' },
+    return new NextResponse(
+      `Failed to create session: ${error.message}`, 
       { status: 500 }
     )
   }

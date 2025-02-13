@@ -45,19 +45,20 @@ export const chatService = {
         const response = await fetch('/api/chat/messages', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            sessionId,
-            message,
-            userId
-          }),
-          credentials: 'include'
+          body: JSON.stringify({ sessionId, message }),
         })
+
+        if (!response.ok) {
+          const error = await response.text()
+          throw new Error(error)
+        }
+
         return await response.json()
-      } catch (error) {
-        console.error('Failed to save to DB:', error)
-        return null
+      } catch (error: any) {
+        console.error('Failed to save message:', error)
+        throw new Error(error.message || 'Failed to save message')
       }
     },
 
@@ -93,18 +94,28 @@ export const chatService = {
 
     async createSession(userId: string, title: string) {
       try {
+        console.log('Creating session with:', { userId, title })
         const response = await fetch('/api/chat/sessions', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ userId, title }),
+          body: JSON.stringify({ title }),
           credentials: 'include'
         })
-        return await response.json()
-      } catch (error) {
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Session creation failed:', errorText)
+          throw new Error(errorText)
+        }
+
+        const data = await response.json()
+        console.log('Session created:', data)
+        return data
+      } catch (error: any) {
         console.error('Failed to create session:', error)
-        return null
+        throw error
       }
     }
   }

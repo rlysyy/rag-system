@@ -37,17 +37,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${notoSans.variable} ${notoSansSC.variable} ${notoSansJP.variable}`}>
-        <SessionProvider>
-          <ThemeProvider 
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-            storageKey="theme"
-          >
-            {children}
-          </ThemeProvider>
-        </SessionProvider>
+          <SessionProvider>
+            <ThemeProvider 
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}
+              disableTransitionOnChange
+              storageKey="theme"
+            >
+              {children}
+            </ThemeProvider>
+          </SessionProvider>
         <Toaster />
       </body>
     </html>

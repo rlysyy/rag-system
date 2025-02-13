@@ -41,18 +41,19 @@ export async function GET(req: Request) {
  * @returns 返回保存的消息
  */
 export async function POST(req: Request) {
-  console.log('Received message request')  // 添加日志
+  console.log('POST /api/chat/messages called')
   const session = await auth()
+  
   if (!session?.user?.id) {
-    console.log('No session found')  // 添加日志
-    return new NextResponse('Unauthorized', { status: 401 })
+    console.log('No session found:', session)
+    return new NextResponse('Unauthorized: No valid session', { status: 401 })
   }
 
-  const { sessionId, message } = await req.json()
-  console.log('Message data:', { sessionId, message })  // 添加日志
-  
   try {
-    // 验证会话所有权，确保用户只能在自己的会话中发送消息
+    const { sessionId, message } = await req.json()
+    console.log('Received message:', { sessionId, message, userId: session.user.id })
+
+    // 验证会话所有权
     const validSession = await prisma.chatSession.findFirst({
       where: {
         id: sessionId,
@@ -60,11 +61,22 @@ export async function POST(req: Request) {
       }
     })
 
+    console.log('Valid session check:', { validSession, sessionId, userId: session.user.id })
+
     if (!validSession) {
-      return new NextResponse('Invalid session', { status: 400 })
+      // 如果会话不存在，自动创建一个
+      const newSession = await prisma.chatSession.create({
+        data: {
+          id: sessionId,
+          userId: session.user.id,
+          title: message.content.slice(0, 30),
+          lastMessage: message.content
+        }
+      })
+      console.log('Created new session:', newSession)
     }
 
-    // 保存消息到数据库
+    // 保存消息
     const savedMessage = await prisma.message.create({
       data: {
         sessionId,
@@ -75,8 +87,8 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json(savedMessage)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Message save failed:', error)
-    return new NextResponse('Database error', { status: 500 })
+    return new NextResponse('Failed to save message: ' + error.message, { status: 500 })
   }
 } 

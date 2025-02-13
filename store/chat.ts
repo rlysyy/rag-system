@@ -3,60 +3,13 @@
 import { create } from 'zustand'
 import type { Message, ChatStore, ChatHistory } from '@/types/chat'
 import { createSession, converseWithAgent } from '@/services/agent'
-import { STORAGE_KEYS } from '@/constants/storage'
 import { chatService } from '@/services/chatService'
-import { messageUtils } from '@/utils/messageUtils'
-
-// 工具函数：安全地访问 localStorage
-const getLocalStorage = (key: string) => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem(key)
-  }
-  return null
-}
-
-const setLocalStorage = (key: string, value: any) => {
-  if (typeof window !== 'undefined') {
-    try {
-      // 如果 value 已经是字符串，直接使用
-      const valueToStore = typeof value === 'string' ? value : JSON.stringify(value)
-      localStorage.setItem(key, valueToStore)
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error)
-    }
-  }
-}
-
-// 工具函数：转换消息中的日期并过滤无效消息
-const convertDates = (messages: any): Message[] => {
-  if (!Array.isArray(messages)) {
-    console.warn('Invalid messages format:', messages)
-    return []
-  }
-
-  return messages
-    .map(msg => ({
-      ...msg,
-      timestamp: new Date(msg.timestamp || Date.now())
-    }))
-    .filter(msg => {
-      // 用户消息：保留非空内容
-      if (msg.role === 'user') {
-        return msg.content.trim().length > 0
-      }
-      // AI消息：保留有内容或引用的消息
-      if (msg.role === 'assistant') {
-        const hasContent = msg.content.trim().length > 0
-        const hasReferences = Array.isArray(msg.references) && msg.references.length > 0
-        return hasContent || hasReferences
-      }
-      return false
-    })
-}
 
 // 创建聊天状态管理store
 export const useChatStore = create<ChatStore>()((set, get) => {
   const { messages, chatHistory, currentChatId } = chatService.initialize()
+
+  let lastSavedContent = ''  // 用于跟踪最后保存的内容
 
   return {
     messages,
@@ -83,62 +36,46 @@ export const useChatStore = create<ChatStore>()((set, get) => {
 
     stopTyping: () => set({ isTyping: false }),
 
-    addMessage: async (message: Message) => {
+    addMessage: async (message: Message, userSession?: any) => {
       if (message.role === 'user') {
         try {
-          const { currentChatId, messages: currentMessages, chatHistory } = get()
+          const { currentChatId, messages: currentMessages } = get()
           
-          // 更新消息和历史记录
-          const updatedMessages = [...currentMessages, message]
-          const updatedHistory = [...chatHistory]
-          
-          // 更新或添加聊天历史
-          const existingChat = updatedHistory.find((chat: ChatHistory) => chat.id === currentChatId)
-          if (!existingChat) {
-            updatedHistory.push({
-              id: currentChatId,
-              title: message.content.slice(0, 30) + (message.content.length > 30 ? '...' : ''),
-              timestamp: new Date(),
-              lastMessage: message.content
-            })
-          } else {
-            existingChat.lastMessage = message.content
-            existingChat.timestamp = new Date()
+          // 保存用户消息到数据库
+          if (userSession?.user?.id) {
+            await chatService.db.saveMessage(currentChatId, message, userSession.user.id)
           }
-          
-          // 保存状态
-          chatService.saveMessages(currentChatId, updatedMessages)
-          chatService.saveHistory(updatedHistory)
-          
+
+          // 立即添加用户消息
+          const updatedMessages = [...currentMessages, message]
           set({ 
             messages: updatedMessages,
-            chatHistory: updatedHistory,
-            isLoading: true,
-            isTyping: false
+            isLoading: false  // 用户消息不需要 loading
           })
 
-          // 添加 AI 响应
+          // 创建新的会话
           const agentId = process.env.NEXT_PUBLIC_AGENT_ID
           if (!agentId) throw new Error('Agent ID not found')
-
-          // 创建新的会话
           const sessionResponse = await createSession(agentId)
           const sessionId = sessionResponse.data.id
 
-          // 添加 loading 状态的 AI 消息
-          const loadingMessage: Message = {
+          // 添加空的 AI 消息
+          const aiMessage: Message = {
             role: 'assistant',
             content: '',
             timestamp: new Date(),
             references: []
           }
 
+          // 添加 AI 消息并开始流式响应
           set(state => ({ 
-            messages: [...state.messages, loadingMessage]
+            messages: [...state.messages, aiMessage],
+            isTyping: true  // 开始打字效果
           }))
 
           let isFirstChunk = true
-          await converseWithAgent(
+
+          converseWithAgent(
             agentId,
             sessionId,
             message.content,
@@ -153,34 +90,50 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                 const newMessages = [...state.messages]
                 const lastMessage = newMessages[newMessages.length - 1]
                 
-                if (isFirstChunk) {
-                  isFirstChunk = false
-                  if (lastMessage?.role === 'assistant') {
+                if (lastMessage?.role === 'assistant') {
+                  // 第一个数据块，直接设置内容
+                  if (isFirstChunk) {
+                    isFirstChunk = false
                     lastMessage.content = answer
                     lastMessage.references = references || []
+                    return {
+                      messages: newMessages,
+                      isTyping: true
+                    }
                   }
-                  chatService.saveMessages(currentChatId, newMessages)
-                  return {
-                    messages: newMessages,
-                    isTyping: true,
-                    isLoading: false
+
+                  // 后续数据块，只有在内容变长时更新
+                  if (answer.length > lastMessage.content.length) {
+                    lastMessage.content = answer
+                    lastMessage.references = references || []
+
+                    // 延迟保存最终响应
+                    clearTimeout(state.saveTimeout)
+                    const saveTimeout = setTimeout(() => {
+                      if (lastSavedContent !== answer) {
+                        if (userSession?.user?.id) {
+                          lastSavedContent = answer
+                          chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
+                            .catch(error => console.error('Failed to save AI message:', error))
+                          set({ isTyping: false })
+                        }
+                      }
+                    }, 1000)
+
+                    return {
+                      messages: newMessages,
+                      saveTimeout,
+                      isTyping: true
+                    }
                   }
                 }
 
-                if (lastMessage?.role === 'assistant') {
-                  lastMessage.content = answer
-                  lastMessage.references = references || []
-                }
-                chatService.saveMessages(currentChatId, newMessages)
                 return { messages: newMessages }
               })
             }
           )
-          
-          set({ isTyping: false })
-          
         } catch (error) {
-          console.error('Chat error:', error)
+          console.error('Failed to save user message:', error)
           set(state => {
             const messages = [...state.messages]
             messages[messages.length - 1] = {

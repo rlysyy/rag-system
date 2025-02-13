@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import type { Message, ChatHistory } from '@/types/chat'
 import { chatService } from '@/services/chatService'
-import { getMockResponse } from '@/lib/mockData/ai-responses'
 
 const STORAGE_KEY = 'chat-messages'
 const HISTORY_KEY = 'chat-history'
@@ -155,78 +154,16 @@ export function useChat() {
 
   // 添加消息的处理函数
   const addMessage = useCallback(async (message: Message) => {
-    console.log('addMessage called with:', message)  // 消息处理日志
-    console.log('Current session state:', { status, session })  // 当前 session 状态
-
-    // 更新本地状态
-    setMessages(prev => [...prev, {
-      ...message,
-      timestamp: message.timestamp || new Date()
-    }])
-    
-    if (message.role === 'user') {
-      const isFirstUserMessage = !messages.some(m => m.role === 'user')
+    try {
+      // 只更新本地状态
+      setMessages(prev => [...prev, message])
       
-      if (isFirstUserMessage) {
-        const title = message.content.slice(0, 30) + 
-          (message.content.length > 30 ? '...' : '')
-        setChatHistory(prev => [{
-          id: currentChatId,
-          title,
-          timestamp: new Date()
-        }, ...prev.slice(0, 19)]) // 保持最多20条记录
-      }
-
-      // 保存到本地存储
-      const updatedMessages = [...messages, message]
-      localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(updatedMessages))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMessages))
-
-      // 如果用户已登录，保存到数据库
-      if (session?.user?.id) {
-        try {
-          console.log('User ID:', session.user.id)  // 添加日志
-          console.log('Saving user message to DB...')
-          await chatService.db.saveMessage(currentChatId, message, session.user.id)
-        } catch (error) {
-          console.error('Failed to save message to DB:', error)
-        }
-      } else {
-        console.log('No user session found, skipping DB save')  // 添加日志
-      }
-
-      // 获取 AI 响应
-      setIsLoading(true)
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const response = getMockResponse()
-        
-        const aiMessage = {
-          role: 'assistant' as const,
-          content: response.content,
-          timestamp: new Date(),
-          references: response.references
-        }
-
-        setMessages(prev => [...prev, aiMessage])
-        
-        // 更新存储
-        const allMessages = [...updatedMessages, aiMessage]
-        localStorage.setItem(`messages-${currentChatId}`, JSON.stringify(allMessages))
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allMessages))
-
-        // 保存 AI 响应到数据库
-        if (session?.user?.id) {
-          console.log('Saving AI response to DB...')  // 添加日志
-          await chatService.db.saveMessage(currentChatId, aiMessage, session.user.id)
-        }
-      } catch (error) {
-        console.error('Failed to process message:', error)
-      } finally {
-        setIsLoading(false)
-      }
+      // ... 其他代码
+    } catch (error) {
+      console.error('Failed to process message:', error)
+      throw error
     }
-  }, [messages, currentChatId, session, status])
+  }, [currentChatId, session, status, chatHistory, messages])
 
   /**
    * 清除当前会话并创建新会话

@@ -5,11 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send } from 'lucide-react'
 import { useChatStore } from '@/store/chat'
+import { useChat } from '@/hooks/useChat'
+import type { Message } from '@/types/chat'
+import { useSession } from 'next-auth/react'
 
 export function Sender() {
   const { addMessage, isLoading, stopCurrentResponse, isTyping, stopTyping } = useChatStore()
+  const chatHook = useChat()
   const [content, setContent] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { data: session } = useSession()
 
   // 自动调整高度
   const adjustHeight = () => {
@@ -26,13 +31,17 @@ export function Sender() {
   }, [content])
 
   const handleSend = () => {
+    console.log('Sender handleSend called with:', content)
     if (!content.trim() || isLoading) return
     
-    addMessage({
-      role: 'user',
+    const message: Message = {
+      role: 'user' as const,
       content: content.trim(),
       timestamp: new Date()
-    })
+    }
+    
+    console.log('Sender session:', session)
+    addMessage(message, session)
     setContent('')
   }
 

@@ -7,7 +7,7 @@ import { ChatSidebar } from './ChatSidebar'
 import { useChatStore } from '@/store/chat'
 
 export function ChatLayout() {
-  const { messages, addMessage, isLoading, isTyping } = useChatStore()
+  const { messages } = useChatStore()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
