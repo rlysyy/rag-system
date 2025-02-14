@@ -83,7 +83,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
             agentId,
             sessionId,
             message.content,
-            ({ answer, references, done }) => {
+            ({ answer, references }) => {
               if (!answer || 
                   answer.includes('is running') || 
                   answer.includes('生成回答') ||
@@ -113,17 +113,6 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                     lastMessage.content = answer
                     lastMessage.references = references || []
 
-                    // 如果收到流结束标志，直接保存
-                    if (done && userSession?.user?.id) {
-                      chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
-                        .catch(error => console.error('Failed to save AI message:', error))
-                      return {
-                        messages: newMessages,
-                        isTyping: false  // 关闭打字效果
-                      }
-                    }
-
-                    // 否则继续使用延迟保存
                     clearTimeout(state.saveTimeout)
                     const saveTimeout = setTimeout(() => {
                       if (lastSavedContent !== answer) {
@@ -131,10 +120,27 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                           lastSavedContent = answer
                           chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
                             .catch(error => console.error('Failed to save AI message:', error))
-                          set({ isTyping: false })
+
+                          // 如果是新会话的第一次对话，更新聊天历史
+                          if (newMessages.length === 3) { // 欢迎消息+用户消息 + AI回复
+                            const title = message.content.slice(0, 30)
+                            const updatedHistory = [
+                              { id: currentChatId, title, timestamp: new Date() },
+                              ...get().chatHistory
+                            ]
+                            // 更新聊天历史
+                            set({ 
+                              isTyping: false,
+                              chatHistory: updatedHistory
+                            })
+                            // 保存到本地存储
+                            chatService.saveHistory(updatedHistory)
+                          } else {
+                            set({ isTyping: false })
+                          }
                         }
-                      }
-                    }, 1000)
+                      }                   
+                    }, 3000)
 
                     return {
                       messages: newMessages,

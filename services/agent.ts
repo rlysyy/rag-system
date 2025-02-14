@@ -75,7 +75,7 @@ export async function converseWithAgent(
   agentId: string, 
   sessionId: string | null,
   message: string,
-  onMessage: (data: { answer: string, references?: any[], done?: boolean }) => void
+  onMessage: (data: { answer: string, references?: any[] }) => void
 ): Promise<ChatResponse> {
 
   if (!sessionId) {
@@ -110,7 +110,6 @@ export async function converseWithAgent(
   // 用于累积完整回答和引用
   let accumulatedAnswer = ''
   let finalReferences: any[] = []
-  let previousAnswer = ''
 
   try {
     // 循环读取流式响应
@@ -118,12 +117,6 @@ export async function converseWithAgent(
       const { done: streamDone, value } = await reader.read()
       
       if (streamDone) {
-        // 流结束时，发送最后一次带有 done 标志的消息
-        onMessage({
-          answer: accumulatedAnswer,
-          references: finalReferences,
-          done: true
-        })
         break
       }
 
@@ -143,6 +136,11 @@ export async function converseWithAgent(
             if (data.code === 0) {
               // 处理完成信号
               if (data.data === true) {
+                console.log('done', data.data)
+                onMessage({
+                  answer: accumulatedAnswer,
+                  references: finalReferences
+                })
                 continue
               }
 
@@ -155,22 +153,17 @@ export async function converseWithAgent(
                     currentAnswer === '') {
                   continue
                 }
-
-                // 获取新增内容
-                const newContent = currentAnswer.slice(previousAnswer.length)
                 
                 accumulatedAnswer = currentAnswer
-                previousAnswer = currentAnswer
 
                 // 更新引用信息
                 if (data.data.reference?.chunks) {
                   finalReferences = data.data.reference.chunks
                 }
                 
-                // 调用进度回调，更新UI
                 onMessage({
                   answer: accumulatedAnswer,
-                  references: finalReferences
+                  references: finalReferences,
                 })
               }
             }
