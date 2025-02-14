@@ -72,7 +72,6 @@ export const useChatStore = create<ChatStore>()((set, get) => {
             references: []
           }
 
-          // 在添加 AI 消息时设置 loading
           set(state => ({ 
             messages: [...state.messages, aiMessage],
             isLoading: true  // 在这里设置 loading
@@ -84,8 +83,9 @@ export const useChatStore = create<ChatStore>()((set, get) => {
             agentId,
             sessionId,
             message.content,
-            ({ answer, references }) => {
-              if (answer.includes('is running') || 
+            ({ answer, references, done }) => {
+              if (!answer || 
+                  answer.includes('is running') || 
                   answer.includes('生成回答') ||
                   answer === '') {
                 return
@@ -103,7 +103,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                     lastMessage.references = references || []
                     return {
                       messages: newMessages,
-                      isTyping: true,
+                      isTyping: true,   // 设置打字效果
                       isLoading: false  // 确保关闭 loading
                     }
                   }
@@ -113,7 +113,17 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                     lastMessage.content = answer
                     lastMessage.references = references || []
 
-                    // 延迟保存最终响应
+                    // 如果收到流结束标志，直接保存
+                    if (done && userSession?.user?.id) {
+                      chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
+                        .catch(error => console.error('Failed to save AI message:', error))
+                      return {
+                        messages: newMessages,
+                        isTyping: false  // 关闭打字效果
+                      }
+                    }
+
+                    // 否则继续使用延迟保存
                     clearTimeout(state.saveTimeout)
                     const saveTimeout = setTimeout(() => {
                       if (lastSavedContent !== answer) {
@@ -121,7 +131,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                           lastSavedContent = answer
                           chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
                             .catch(error => console.error('Failed to save AI message:', error))
-                          set({ isTyping: false })  // 只在最后关闭打字效果
+                          set({ isTyping: false })
                         }
                       }
                     }, 1000)

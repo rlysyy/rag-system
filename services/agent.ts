@@ -40,9 +40,12 @@ interface ChatResponse {
   }
 }
 
-// 创建会话
+/**
+ * 创建新的聊天会话
+ * @param agentId - AI Agent的唯一标识符
+ * @returns 返回包含会话ID的响应
+ */
 export async function createSession(agentId: string): Promise<SessionResponse> {
-  
   const response = await fetch(`/api/agents/${agentId}/sessions`, {
     method: 'POST',
     headers: {
@@ -60,29 +63,34 @@ export async function createSession(agentId: string): Promise<SessionResponse> {
   return data
 }
 
-// 对话
+/**
+ * 与 AI Agent 进行对话，支持流式响应
+ * @param agentId - AI Agent的唯一标识符
+ * @param sessionId - 会话ID，不能为空
+ * @param message - 用户发送的消息内容
+ * @param onMessage - 处理流式响应的回调函数，用于实时更新UI
+ * @returns 返回完整的对话响应
+ */
 export async function converseWithAgent(
   agentId: string, 
   sessionId: string | null,
   message: string,
-  onProgress?: (data: { answer: string, references?: any[] }) => void
+  onMessage: (data: { answer: string, references?: any[], done?: boolean }) => void
 ): Promise<ChatResponse> {
-  console.log('Starting conversation with agent:', { agentId, sessionId, message })
 
   if (!sessionId) {
     throw new Error('Session ID is required')
   }
 
+  // 构建请求URL和参数
   const url = `/api/agents/${agentId}/completions`
-  console.log('Making request to:', url)
-  
   const requestBody = {
     question: message,
     stream: true,
     session_id: sessionId
   }
-  console.log('Request body:', requestBody)
 
+  // 发送请求
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -91,32 +99,39 @@ export async function converseWithAgent(
     body: JSON.stringify(requestBody)
   })
 
-  console.log('API response status:', response.status)
-
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`)
   }
 
+  // 获取响应流读取器
   const reader = response.body?.getReader()
   if (!reader) throw new Error('No response body')
 
+  // 用于累积完整回答和引用
   let accumulatedAnswer = ''
   let finalReferences: any[] = []
   let previousAnswer = ''
 
   try {
+    // 循环读取流式响应
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) {
-        console.log('Stream completed. Final answer:', accumulatedAnswer)
+      const { done: streamDone, value } = await reader.read()
+      
+      if (streamDone) {
+        // 流结束时，发送最后一次带有 done 标志的消息
+        onMessage({
+          answer: accumulatedAnswer,
+          references: finalReferences,
+          done: true
+        })
         break
       }
 
+      // 解码二进制数据
       const text = new TextDecoder().decode(value)
-      console.log('Raw chunk received:', text)
-      
       const lines = text.split('\n')
       
+      // 处理每一行 SSE 数据
       for (const line of lines) {
         if (line.startsWith('data:')) {
           try {
@@ -124,44 +139,36 @@ export async function converseWithAgent(
             if (!jsonStr) continue
 
             const data = JSON.parse(jsonStr)
-            console.log('Parsed chunk data:', data)
             
             if (data.code === 0) {
+              // 处理完成信号
               if (data.data === true) {
-                console.log('Received completion signal')
                 continue
               }
 
               if (data.data.answer) {
                 const currentAnswer = data.data.answer
-                console.log('Current answer:', currentAnswer)
 
-                // 跳过 loading 状态的消息
+                // 跳过加载状态消息
                 if (currentAnswer.includes('is running') || 
                     currentAnswer.includes('生成回答') ||
                     currentAnswer === '') {
-                  console.log('Skipping loading message')
                   continue
                 }
 
                 // 获取新增内容
                 const newContent = currentAnswer.slice(previousAnswer.length)
-                console.log('New content:', newContent)
                 
                 accumulatedAnswer = currentAnswer
                 previousAnswer = currentAnswer
 
+                // 更新引用信息
                 if (data.data.reference?.chunks) {
                   finalReferences = data.data.reference.chunks
-                  console.log('Updated references:', finalReferences)
                 }
                 
-                console.log('Calling onProgress with:', {
-                  answer: accumulatedAnswer,
-                  references: finalReferences
-                })
-                
-                onProgress?.({
+                // 调用进度回调，更新UI
+                onMessage({
                   answer: accumulatedAnswer,
                   references: finalReferences
                 })

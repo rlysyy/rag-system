@@ -41,13 +41,13 @@ export function Bubble({ message, isLast, isNewResponse }: {
     window.open(url, '_blank')
   }
 
-  console.log('Rendering Bubble:', {
-    messageContent: message.content,
-    isLast,
-    isNewResponse,
-    shouldShowTyping,
-    isTyping: useChatStore.getState().isTyping
-  })
+  // console.log('Rendering Bubble:', {
+  //   messageContent: message.content,
+  //   isLast,
+  //   isNewResponse,
+  //   shouldShowTyping,
+  //   isTyping: useChatStore.getState().isTyping
+  // })
 
   return (
     <div className="space-y-2">
