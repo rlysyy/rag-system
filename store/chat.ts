@@ -31,6 +31,8 @@ interface ChatStoreState {
   updateLastMessage: (content: string) => void
   setMessages: (messages: Message[]) => void
   setChatHistory: (history: ChatHistory[]) => void
+  updateChatTitle: (chatId: string, newTitle: string) => Promise<void>
+  deleteChat: (chatId: string) => Promise<void>
 }
 
 // 创建聊天状态管理store
@@ -59,12 +61,15 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       
       // 中断 AI 服务的请求
       const aiService = getAiService()
-      if (aiService.abort) {  // 直接检查 abort 方法
+      if (aiService.abort) {
         aiService.abort()
       }
       
       if (lastMessage?.role === 'assistant') {
         const title = messages[messages.length - 2]?.content?.slice(0, 30) || '新对话'
+        
+        // 生成唯一的消息ID
+        const messageId = `${currentChatId}-${Date.now()}`
         
         // 检查是否已存在相同 ID 的历史记录
         const updatedHistory = chatHistory.some(chat => chat.id === currentChatId)
@@ -80,23 +85,26 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
 
         // 如果最后一条消息是空的，就移除它
         const updatedMessages = lastMessage.content.trim() === '' 
-          ? messages.slice(0, -1)  // 移除最后一条空消息
-          : messages
+          ? messages.slice(0, -1)
+          : messages.map(msg => ({
+              ...msg,
+              id: msg.id || messageId // 确保每条消息都有唯一ID
+            }))
 
         set({ 
           shouldStop: true,
           isLoading: false,
           isTyping: false,
           chatHistory: updatedHistory,
-          messages: updatedMessages  // 更新消息列表
+          messages: updatedMessages
         })
 
-        // 只在添加新记录时保存历史
+        // 保存状态
         if (!chatHistory.some(chat => chat.id === currentChatId)) {
           chatService.saveHistory(updatedHistory)
         }
         chatService.saveMessages(currentChatId, updatedMessages)
-        storage.set(STORAGE_KEYS.LAST_CHAT_ID, currentChatId)  // 更新 last-chat-id
+        storage.set(STORAGE_KEYS.LAST_CHAT_ID, currentChatId)
       } else {
         set({ 
           shouldStop: true,
@@ -124,13 +132,19 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
         try {
           const { currentChatId, messages: currentMessages } = get()
           
+          // 为用户消息添加唯一ID
+          const userMessage = {
+            ...message,
+            id: `${currentChatId}-user-${Date.now()}`
+          }
+          
           // 保存用户消息到数据库
           if (userSession?.user?.id) {
-            await chatService.db.saveMessage(currentChatId, message, userSession.user.id)
+            await chatService.db.saveMessage(currentChatId, userMessage, userSession.user.id)
           }
 
           // 只添加用户消息，不设置 loading
-          const updatedMessages = [...currentMessages, message]
+          const updatedMessages = [...currentMessages, userMessage]
           set({ messages: updatedMessages })
 
           // 获取当前配置的 AI 服务
@@ -138,6 +152,7 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
 
           // 添加空的 AI 消息，并设置 loading 状态
           const aiMessage: Message = {
+            id: `${currentChatId}-ai-${Date.now()}`,
             role: 'assistant',
             content: '',
             timestamp: new Date(),
@@ -351,6 +366,47 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
     setChatHistory: (history: ChatHistory[]) => {
       set({ chatHistory: history })
       chatService.saveHistory(history)
+    },
+
+    updateChatTitle: async (chatId: string, newTitle: string) => {
+      const { chatHistory } = get()
+      const updatedHistory = chatHistory.map(chat => 
+        chat.id === chatId ? { ...chat, title: newTitle } : chat
+      )
+      
+      set({ chatHistory: updatedHistory })
+      
+      // 保存到本地存储
+      chatService.saveHistory(updatedHistory)
+      
+      // 保存到数据库
+      try {
+        await chatService.db.updateChatTitle(chatId, newTitle)
+      } catch (error) {
+        console.error('Failed to update chat title:', error)
+      }
+    },
+
+    deleteChat: async (chatId: string) => {
+      const { chatHistory, currentChatId, clearMessages } = get()
+      const updatedHistory = chatHistory.filter(chat => chat.id !== chatId)
+      
+      set({ chatHistory: updatedHistory })
+      
+      // 保存到本地存储
+      chatService.saveHistory(updatedHistory)
+      
+      // 保存到数据库
+      try {
+        await chatService.db.deleteChat(chatId)
+        
+        // 如果删除的是当前会话，清除消息
+        if (chatId === currentChatId) {
+          await clearMessages()
+        }
+      } catch (error) {
+        console.error('Failed to delete chat:', error)
+      }
     },
 
     // ... 其他必要方法

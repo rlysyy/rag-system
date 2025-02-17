@@ -2,9 +2,17 @@
 
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
-import { PlusCircle, MessageSquare, Info } from 'lucide-react'
+import { PlusCircle, MessageSquare, Info, MoreHorizontal, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useChatStore } from '@/store/chat'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from '@/components/ui/input'
 
 export function ChatSidebar() {
   const { 
@@ -13,9 +21,13 @@ export function ChatSidebar() {
     clearMessages, 
     loadChat,
     isLoading,
-    isTyping
+    isTyping,
+    updateChatTitle,
+    deleteChat
   } = useChatStore()
   const { data: session } = useSession()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
 
   const isResponding = isLoading || isTyping
   
@@ -48,13 +60,30 @@ export function ChatSidebar() {
     }
   }
 
+  const handleEdit = (id: string, title: string) => {
+    setEditingId(id)
+    setEditingTitle(title)
+  }
+
+  const handleSave = async (id: string) => {
+    if (editingTitle.trim()) {
+      await updateChatTitle(id, editingTitle.trim())
+      setEditingId(null)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm('确定要删除这个对话吗？')) {
+      await deleteChat(id)
+    }
+  }
+
   return (
-    <div className="w-64 border-r bg-muted/10 flex flex-col h-full">
+    <div className="w-64 h-full border-r bg-background flex flex-col">
       <div className="p-4 border-b">
         <Button 
           onClick={handleNewChat}
-          className="w-full" 
-          variant="default"
+          className="w-full bg-primary hover:bg-primary/90" 
           disabled={isResponding}
         >
           <PlusCircle className="h-4 w-4 mr-2" />
@@ -62,45 +91,72 @@ export function ChatSidebar() {
         </Button>
       </div>
       
-      <div className="flex-1 overflow-auto custom-scrollbar">
-        <div className="space-y-0.5 p-2">
-          {chatHistory
-            .sort((a, b) => {
-              const timeA = new Date(a.timestamp).getTime()
-              const timeB = new Date(b.timestamp).getTime()
-              
-              if (isNaN(timeA)) return 1
-              if (isNaN(timeB)) return -1
-              
-              return timeB - timeA
-            })
-            .slice(0, 20)
-            .map((chat) => (
-              <button
-                key={chat.id}
-                onClick={() => handleSelectChat(chat.id)}
-                disabled={isResponding}
-                className={cn(
-                  "w-full px-3 py-2 rounded-md text-left transition-colors",
-                  "hover:bg-muted/60",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  chat.id === currentChatId ? "bg-muted" : "bg-transparent",
-                  "flex items-center gap-3",
-                  isResponding && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <MessageSquare className="h-4 w-4 shrink-0 opacity-60" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate font-medium">
-                    {chat.title || '新对话'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {formatDate(chat.timestamp)}
-                  </p>
+      <div className="flex-1 overflow-auto p-2">
+        {chatHistory.map((chat) => (
+          <div
+            key={chat.id}
+            className={cn(
+              "group relative flex items-center rounded-lg mb-1 transition-colors",
+              chat.id === currentChatId 
+                ? "bg-primary/10"
+                : "bg-transparent hover:bg-primary/5"
+            )}
+          >
+            {editingId === chat.id ? (
+              <div className="flex-1 flex items-center gap-2 p-2">
+                <Input
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  className="h-8 bg-white"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSave(chat.id)
+                    if (e.key === 'Escape') setEditingId(null)
+                  }}
+                />
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleSave(chat.id)}>
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </button>
-            ))}
-        </div>
+              </div>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  className="flex-1 justify-start px-3 py-2 text-sm font-normal truncate rounded-lg"
+                  onClick={() => loadChat(chat.id)}
+                >
+                  {chat.title || '新对话'}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-32">
+                    <DropdownMenuItem onClick={() => handleEdit(chat.id, chat.title || '新对话')}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      重命名
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(chat.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      删除
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="p-4 border-t">

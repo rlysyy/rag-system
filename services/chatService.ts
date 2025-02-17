@@ -145,6 +145,50 @@ export const chatService = {
         console.error('Failed to create session:', error)
         throw error
       }
+    },
+
+    updateChatTitle: async (chatId: string, newTitle: string) => {
+      try {
+        const response = await fetch(`/api/chat/title`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chatId,
+            title: newTitle
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to update chat title')
+        }
+
+        return await response.json()
+      } catch (error) {
+        console.error('Error updating chat title:', error)
+        throw error
+      }
+    },
+
+    deleteChat: async (chatId: string) => {
+      try {
+        const response = await fetch(`/api/chat/${chatId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to delete chat')
+        }
+
+        return await response.json()
+      } catch (error) {
+        console.error('Error deleting chat:', error)
+        throw error
+      }
     }
   }
 } 
