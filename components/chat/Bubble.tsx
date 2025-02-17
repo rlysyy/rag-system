@@ -5,14 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button'
 import { TypewriterText } from './TypewriterText'
 import { useChatStore } from '@/store/chat'
-import { 
-  FileText,
-  FilePdf, 
-  FileDoc, 
-  FileXls, 
-  FileCsv,
-  File 
-} from "@phosphor-icons/react"
+import Image from 'next/image'
 
 interface DocumentReference {
   file_link: string;
@@ -61,29 +54,24 @@ export function Bubble({ message, isLast, isNewResponse }: {
     }
   }
 
-  const getFileIcon = (ext: string) => {
-    const iconProps = {
-      size: 20,
-      weight: "fill" as const,
-      className: cn("shrink-0", {
-        "text-red-500": ext.toLowerCase() === 'pdf',
-        "text-green-600": ['xlsx', 'xls'].includes(ext.toLowerCase()),
-        "text-green-500": ext.toLowerCase() === 'csv',
-        "text-blue-600": ['doc', 'docx'].includes(ext.toLowerCase()),
-        "text-gray-600": ext.toLowerCase() === 'txt',
-        "text-gray-500": !['pdf', 'xlsx', 'xls', 'csv', 'doc', 'docx', 'txt'].includes(ext.toLowerCase()) // 只在没有匹配其他类型时使用默认颜色
-      })
-    }
-
+  const getFileIcon = (ext: string): string => {
+    const getIconPath = (fileType: string) => `/icons/file-types/${fileType}.svg`
+    
     switch(ext.toLowerCase()) {
-      case 'pdf': return <FilePdf {...iconProps} />
-      case 'xlsx':
-      case 'xls': return <FileXls {...iconProps} />
-      case 'csv': return <FileCsv {...iconProps} />
+      case 'pdf': 
+        return getIconPath('pdf')
       case 'doc':
-      case 'docx': return <FileDoc {...iconProps} />
-      case 'txt': return <FileText {...iconProps} />
-      default: return <File {...iconProps} />
+      case 'docx': 
+        return getIconPath('doc')
+      case 'xlsx':
+      case 'xls': 
+        return getIconPath('xlsx')
+      case 'csv': 
+        return getIconPath('csv')
+      case 'txt': 
+        return getIconPath('txt')
+      default:
+        return getIconPath('default')
     }
   }
 
@@ -157,11 +145,19 @@ export function Bubble({ message, isLast, isNewResponse }: {
                 <Button
                   key={uniqueKey}
                   variant="outline"
-                  className="w-full h-auto p-2 flex items-center gap-2 text-left bg-background hover:bg-background/80"
+                  className="w-full h-auto p-3 flex items-center gap-3 text-left bg-background hover:bg-background/80"
                   onClick={() => handleDocumentClick(reference)}
                 >
-                  {getFileIcon(ext)}
-                  <span className="truncate text-xs">{reference.file_name}</span>
+                  <div className="w-8 h-8 relative shrink-0">
+                    <Image 
+                      src={getFileIcon(ext)} 
+                      alt={`${ext.toUpperCase()} file`}
+                      width={32}
+                      height={32}
+                      className="object-contain" 
+                    />
+                  </div>
+                  <span className="truncate text-sm flex-1">{reference.file_name}</span>
                 </Button>
               )
             })}
