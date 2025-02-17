@@ -1,19 +1,19 @@
-import { AiService } from '@/types/ai'
 import { Message } from '@/types/chat'
 import { streamUtils } from '@/utils/streamUtils'
 import type { SdcAiRequest, SdcAiResponse, DocumentReference } from '@/types/sdcAi'
+import { AIService } from '@/types/ai'
 
-export const sdcAiService: AiService = {
+export const sdcAiService: AIService = {
   async processMessage(
-    message: string, 
-    chatId: string,
-    onProgress?: (data: { answer: string, references?: any[] }) => void
-  ): Promise<Message> {
+    message: string,
+    sessionId: string,
+    onProgress: (data: { answer: string, references?: DocumentReference[] }) => void
+  ): Promise<void> {
     console.log('SDC AI Service: Starting request')
     const payload: SdcAiRequest = {
       text: message,
       kb_ids: [process.env.NEXT_PUBLIC_SDC_KB_IDS!],
-      chat_id: chatId,
+      chat_id: sessionId,
       stream: true
     }
     console.log('SDC AI Service: Payload', payload)
@@ -63,11 +63,6 @@ export const sdcAiService: AiService = {
     console.log('SDC AI Service: Stream processing completed')
     console.log('SDC AI Service: Final answer:', accumulatedAnswer)
 
-    return {
-      role: 'assistant',
-      content: accumulatedAnswer,
-      timestamp: new Date(),
-      references: finalReferences
-    }
+    return
   }
 } 

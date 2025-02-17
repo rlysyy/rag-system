@@ -1,5 +1,4 @@
-import { Message } from './chat'
-import { DocumentReference } from 'firebase/firestore'
+import { DocumentReference } from '@/types/sdcAi'
 
 export interface AIService {
   processMessage: (

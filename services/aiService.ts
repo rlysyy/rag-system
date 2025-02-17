@@ -1,3 +1,6 @@
+import { AIService } from "@/types/ai";
+import { DocumentReference } from "@/types/sdcAi";
+
 export class SDCAIService implements AIService {
   private controller: AbortController | null = null;
 
@@ -65,7 +68,7 @@ export class SDCAIService implements AIService {
         }
       }
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.log('Request was aborted');
       } else {
         console.error('Error in processMessage:', error);
