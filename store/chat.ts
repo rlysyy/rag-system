@@ -299,6 +299,7 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       if (userSession?.user?.id) {
         try {
           const dbMessages = await chatService.db.loadSessionMessages(chatId)
+          console.log('Store: Loaded messages:', dbMessages)
           if (dbMessages && dbMessages.length > 0) {
             set({ messages: dbMessages })
             chatService.saveMessages(chatId, dbMessages)

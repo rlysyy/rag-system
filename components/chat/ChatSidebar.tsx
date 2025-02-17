@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { PlusCircle, MessageSquare, Info, MoreHorizontal, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from '@/components/ui/input'
+import { chatService } from '@/services/chatService'
 
 export function ChatSidebar() {
   const { 
@@ -23,7 +25,9 @@ export function ChatSidebar() {
     isLoading,
     isTyping,
     updateChatTitle,
-    deleteChat
+    deleteChat,
+    setChatHistory,
+    setMessages
   } = useChatStore()
   const { data: session } = useSession()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -79,6 +83,30 @@ export function ChatSidebar() {
     }
   }
 
+  // 在组件挂载时加载用户的聊天历史和当前会话消息
+  useEffect(() => {
+    async function loadUserData() {
+      if (session?.user?.id) {
+        try {
+          // 从数据库加载用户的聊天会话
+          const sessions = await chatService.db.loadUserSessions(session.user.id)
+          if (sessions && sessions.length > 0) {
+            setChatHistory(sessions)
+            
+            // 如果有当前会话ID，加载该会话的消息
+            if (currentChatId) {
+              await loadChat(currentChatId, session)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load chat data:', error)
+        }
+      }
+    }
+
+    loadUserData()
+  }, [session, currentChatId, setChatHistory, loadChat])
+
   return (
     <div className="relative h-full flex">
       <div className={cn(
@@ -108,7 +136,8 @@ export function ChatSidebar() {
                   "group relative flex items-center rounded-lg mb-1 transition-colors",
                   chat.id === currentChatId 
                     ? "bg-primary/10"
-                    : "bg-transparent hover:bg-primary/5"
+                    : "bg-transparent hover:bg-primary/5",
+                  isResponding && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {editingId === chat.id ? (
@@ -137,7 +166,8 @@ export function ChatSidebar() {
                     <Button
                       variant="ghost"
                       className="flex-1 justify-start px-3 py-2 text-sm font-normal truncate rounded-lg"
-                      onClick={() => loadChat(chat.id)}
+                      onClick={() => handleSelectChat(chat.id)}
+                      disabled={isResponding}
                     >
                       {chat.title || '新对话'}
                     </Button>

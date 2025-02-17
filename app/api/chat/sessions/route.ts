@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from "@/auth"
 
@@ -8,29 +8,27 @@ import { auth } from "@/auth"
  * @param req - 请求对象，需要包含 userId 查询参数
  * @returns 返回指定用户的所有聊天会话
  */
-export async function GET(req: Request) {
-  // 从 URL 中获取用户 ID
-  const { searchParams } = new URL(req.url)
-  const userId = searchParams.get('userId')
+export async function GET(request: NextRequest) {
+  console.log('\n=== API Route GET /api/chat/sessions ===')
   
-  // 验证必需参数W
+  const userId = request.nextUrl.searchParams.get('userId')
+  console.log('User ID:', userId)
+
   if (!userId) {
-    return new NextResponse('Missing userId', { status: 400 })
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
   }
 
   try {
-    // 查询数据库获取会话列表，按更新时间降序排序
     const sessions = await prisma.chatSession.findMany({
       where: { userId },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { createdAt: 'desc' }
     })
+    console.log(`Found ${sessions.length} sessions`)
+    
     return NextResponse.json(sessions)
   } catch (error) {
-    console.error('Failed to fetch sessions:', error)
-    return NextResponse.json(
-      { error: 'Database error' },
-      { status: 500 }
-    )
+    console.error('Database error:', error)
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 }
 

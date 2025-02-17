@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from "@/auth"
 
@@ -8,29 +8,31 @@ import { auth } from "@/auth"
  * @param req - 请求对象，需要包含 sessionId 查询参数
  * @returns 返回指定会话的所有消息，按时间升序排序
  */
-export async function GET(req: Request) {
-  // 从 URL 中获取会话 ID
-  const { searchParams } = new URL(req.url)
-  const sessionId = searchParams.get('sessionId')
+export async function GET(request: NextRequest) {
+  console.log('\n=== API Route GET /api/chat/messages ===')
+  console.log('Request URL:', request.url)
   
-  // 验证必需参数
+  // 使用 NextRequest 的 searchParams
+  const sessionId = request.nextUrl.searchParams.get('sessionId')
+  console.log('Session ID:', sessionId)
+  
   if (!sessionId) {
-    return new NextResponse('Missing sessionId', { status: 400 })
+    console.log('Error: Missing sessionId')
+    return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 })
   }
 
   try {
-    // 查询数据库获取消息列表，按创建时间升序排序
+    console.log('Querying database...')
     const messages = await prisma.message.findMany({
       where: { sessionId },
       orderBy: { createdAt: 'asc' }
     })
+    console.log(`Found ${messages.length} messages`)
+    
     return NextResponse.json(messages)
   } catch (error) {
-    console.error('Failed to fetch messages:', error)
-    return NextResponse.json(
-      { error: 'Database error' },
-      { status: 500 }
-    )
+    console.error('Database error:', error)
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 }
 

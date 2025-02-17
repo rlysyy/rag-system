@@ -107,13 +107,20 @@ export const chatService = {
 
     async loadSessionMessages(sessionId: string) {
       try {
-        const response = await fetch(`/api/chat/messages?sessionId=${sessionId}`, {
+        const url = `/api/chat/messages?sessionId=${sessionId}`
+        console.log('Fetching messages from:', url)
+        
+        const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json'
           },
           credentials: 'include'
         })
-        return await response.json()
+        
+        console.log('Response status:', response.status)
+        const messages = await response.json()
+        console.log('Response data:', messages)
+        return messages
       } catch (error) {
         console.error('Failed to load session messages:', error)
         return []
