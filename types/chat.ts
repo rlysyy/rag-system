@@ -1,3 +1,5 @@
+import { DocumentReference } from './sdcAi'
+
 interface Reference {
   name: string
   id: string
@@ -7,7 +9,7 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
-  references?: any[]
+  references?: DocumentReference[]
 }
 
 export interface ChatContextType {

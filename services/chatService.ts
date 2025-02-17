@@ -9,20 +9,32 @@ export const chatService = {
       const lastChatId = storage.get(STORAGE_KEYS.LAST_CHAT_ID)
       const currentChatId = lastChatId || crypto.randomUUID()
       
+      const savedMessages = storage.get(`${STORAGE_KEYS.CHAT_MESSAGES}-${currentChatId}`)
+      console.log('Saved messages from storage:', savedMessages) // 调试日志
+      
+      let messages: Message[] = []
+      if (savedMessages) {
+        try {
+          const parsedMessages = JSON.parse(savedMessages)
+          messages = messageUtils.convertDates(parsedMessages)
+          console.log('Parsed messages:', messages) // 调试日志
+        } catch (e) {
+          console.error('Failed to parse saved messages:', e)
+          messages = [messageUtils.createWelcomeMessage()]
+        }
+      } else {
+        messages = [messageUtils.createWelcomeMessage()]
+      }
+
       const savedHistory = storage.get(STORAGE_KEYS.CHAT_HISTORY)
       const chatHistory = savedHistory ? 
         JSON.parse(savedHistory).map((chat: any) => ({
           ...chat,
           timestamp: new Date(chat.timestamp)
         })) : []
-      
-      const savedMessages = storage.get(`${STORAGE_KEYS.CHAT_MESSAGES}-${currentChatId}`)
-      const messages = savedMessages ? 
-        messageUtils.convertDates(JSON.parse(savedMessages)) : 
-        [messageUtils.createWelcomeMessage()]
 
       storage.set(STORAGE_KEYS.LAST_CHAT_ID, currentChatId)
-
+      
       return { messages, chatHistory, currentChatId }
     } catch (error) {
       console.error('Failed to initialize chat:', error)
@@ -35,7 +47,20 @@ export const chatService = {
   },
 
   saveMessages: (chatId: string, messages: Message[]) => {
-    storage.set(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`, JSON.stringify(messages))
+    try {
+      const messagesToSave = messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.toISOString() : new Date().toISOString(),
+        // 确保 references 被正确保存
+        references: Array.isArray(msg.references) ? msg.references : []
+      }))
+      
+      const key = `${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`
+      console.log('Saving messages:', messagesToSave) // 调试日志
+      storage.set(key, JSON.stringify(messagesToSave))
+    } catch (error) {
+      console.error('Failed to save messages:', error)
+    }
   },
 
   saveHistory: (history: ChatHistory[]) => {

@@ -1,11 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Message } from '@/types/chat'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TypewriterText } from './TypewriterText'
 import { useChatStore } from '@/store/chat'
+import { 
+  FileText,
+  FilePdf, 
+  FileDoc, 
+  FileXls, 
+  FileCsv,
+  File 
+} from "@phosphor-icons/react"
+
+interface DocumentReference {
+  file_link: string;
+  file_name: string;
+}
 
 export function Bubble({ message, isLast, isNewResponse }: { 
   message: Message
@@ -14,31 +26,65 @@ export function Bubble({ message, isLast, isNewResponse }: {
 }) {
   const isUser = message.role === 'user'
   const references = message.references || []
-  const [isTypingComplete, setIsTypingComplete] = useState(false)
   const { isTyping, isLoading } = useChatStore()
   
-  // 检查是否是 loading 状态的消息
+  // 移动这些状态判断到 useEffect 之前
   const isLoadingMessage = !isUser && (
     message.content === '' ||
     message.content.includes('running') ||
     message.content.includes('生成回答')
   )
+  const showLoading = isLast && isLoading && !isTyping
+  const shouldShowTyping = !isUser && isLast && !isLoadingMessage && isTyping
+  
+  const [isTypingComplete, setIsTypingComplete] = useState(true)
+  
+  useEffect(() => {
+    if (shouldShowTyping) {
+      setIsTypingComplete(false)
+    } else {
+      setIsTypingComplete(true)
+    }
+  }, [shouldShowTyping])
 
-  // 如果不是最后一条消息，且是 loading 状态，不显示
-  if (isLoadingMessage && !isLast) {
-    return null
+  const handleDocumentClick = async (reference: DocumentReference) => {
+    try {
+      // 构建完整的文件 URL
+      const baseUrl = process.env.NEXT_PUBLIC_SDC_Document_URL
+      const url = `${baseUrl}${reference.file_link}`
+      
+      // 在新窗口打开文件
+      window.open(url, '_blank')
+    } catch (error) {
+      console.error('Failed to open document:', error)
+      alert('打开文档失败，请稍后重试')
+    }
   }
 
-  // 如果是最后一条消息，且正在加载，显示 loading 动画
-  const showLoading = isLast && isLoading && !isTyping
-  
-  // 如果是 AI 消息且是最新响应，显示打字效果
-  const shouldShowTyping = !isUser && isLast && !isLoadingMessage && isTyping
+  const getFileIcon = (ext: string) => {
+    const iconProps = {
+      size: 20,
+      weight: "fill" as const,
+      className: cn("shrink-0", {
+        "text-red-500": ext.toLowerCase() === 'pdf',
+        "text-green-600": ['xlsx', 'xls'].includes(ext.toLowerCase()),
+        "text-green-500": ext.toLowerCase() === 'csv',
+        "text-blue-600": ['doc', 'docx'].includes(ext.toLowerCase()),
+        "text-gray-600": ext.toLowerCase() === 'txt',
+        "text-gray-500": !['pdf', 'xlsx', 'xls', 'csv', 'doc', 'docx', 'txt'].includes(ext.toLowerCase()) // 只在没有匹配其他类型时使用默认颜色
+      })
+    }
 
-  const handleOpenDocument = (fileId: string, fileName: string) => {
-    const ext = fileName.split('.').pop()
-    const url = `http://localhost/document/${fileId}?ext=${ext}&prefix=document`
-    window.open(url, '_blank')
+    switch(ext.toLowerCase()) {
+      case 'pdf': return <FilePdf {...iconProps} />
+      case 'xlsx':
+      case 'xls': return <FileXls {...iconProps} />
+      case 'csv': return <FileCsv {...iconProps} />
+      case 'doc':
+      case 'docx': return <FileDoc {...iconProps} />
+      case 'txt': return <FileText {...iconProps} />
+      default: return <File {...iconProps} />
+    }
   }
 
   // console.log('Rendering Bubble:', {
@@ -99,21 +145,26 @@ export function Bubble({ message, isLast, isNewResponse }: {
         </div>
       </div>
 
-      {/* 引用文件列表 */}
-      {!isUser && references.length > 0 && (!isNewResponse || isTypingComplete) && (
+      {/* 引用文件列表 - 只在非用户消息、有引用、且打字完成时显示 */}
+      {!isUser && message.references && message.references.length > 0 && (
         <div className="pl-11">
           <div className="w-[calc(100%-84px)] flex flex-col gap-2">
-            {references.map((file, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="w-full h-auto p-2 flex items-center gap-2 text-left bg-background hover:bg-background/80"
-                onClick={() => handleOpenDocument(file.id, file.name)}
-              >
-                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate text-xs">{file.name}</span>
-              </Button>
-            ))}
+            {message.references.map((reference, index) => {
+              const ext = reference.file_name.split('.').pop() || ''
+              const uniqueKey = `${reference.file_name}-${reference.file_link}-${index}`
+              
+              return (
+                <Button
+                  key={uniqueKey}
+                  variant="outline"
+                  className="w-full h-auto p-2 flex items-center gap-2 text-left bg-background hover:bg-background/80"
+                  onClick={() => handleDocumentClick(reference)}
+                >
+                  {getFileIcon(ext)}
+                  <span className="truncate text-xs">{reference.file_name}</span>
+                </Button>
+              )
+            })}
           </div>
         </div>
       )}

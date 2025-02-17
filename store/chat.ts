@@ -6,6 +6,8 @@ import { createSession, converseWithAgent } from '@/services/agent'
 import { chatService } from '@/services/chatService'
 import { storage } from '@/lib/storage'
 import { STORAGE_KEYS } from '@/constants/storage'
+import { getAiService } from '@/services/aiServiceFactory'
+import { AiServiceType } from '@/types/ai'
 
 // 创建聊天状态管理store
 export const useChatStore = create<ChatStore>()((set, get) => {
@@ -58,11 +60,8 @@ export const useChatStore = create<ChatStore>()((set, get) => {
           const updatedMessages = [...currentMessages, message]
           set({ messages: updatedMessages })
 
-          // 创建新的会话
-          const agentId = process.env.NEXT_PUBLIC_AGENT_ID
-          if (!agentId) throw new Error('Agent ID not found')
-          const sessionResponse = await createSession(agentId)
-          const sessionId = sessionResponse.data.id
+          // 获取当前配置的 AI 服务
+          const aiService = getAiService()
 
           // 添加空的 AI 消息，并设置 loading 状态
           const aiMessage: Message = {
@@ -74,24 +73,28 @@ export const useChatStore = create<ChatStore>()((set, get) => {
 
           set(state => ({ 
             messages: [...state.messages, aiMessage],
-            isLoading: true  // 在这里设置 loading
+            isLoading: true
           }))
 
           let isFirstChunk = true
 
-          converseWithAgent(
-            agentId,
-            sessionId,
+          // 使用 AI 服务处理消息
+          console.log('Store: Starting AI service processing')
+          await aiService.processMessage(
             message.content,
+            currentChatId,
             ({ answer, references }) => {
+              console.log('Store: Progress callback received:', { answer, references })
               if (!answer || 
                   answer.includes('is running') || 
                   answer.includes('生成回答') ||
                   answer === '') {
+                console.log('Store: Skipping invalid answer')
                 return
               }
 
               set(state => {
+                console.log('Store: Updating state with answer:', answer)
                 const newMessages = [...state.messages]
                 const lastMessage = newMessages[newMessages.length - 1]
                 
@@ -103,14 +106,15 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                     lastMessage.references = references || []
                     return {
                       messages: newMessages,
-                      isTyping: true,   // 设置打字效果
-                      isLoading: false  // 确保关闭 loading
+                      isTyping: true,
+                      isLoading: false
                     }
                   }
 
                   // 后续数据块，累积内容
                   if (answer.length > lastMessage.content.length) {
                     lastMessage.content = answer
+                    // 确保引用被正确设置
                     lastMessage.references = references || []
 
                     clearTimeout(state.saveTimeout)
@@ -118,7 +122,11 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                       if (lastSavedContent !== answer) {
                         if (userSession?.user?.id) {
                           lastSavedContent = answer
-                          chatService.db.saveMessage(currentChatId, lastMessage, userSession.user.id)
+                          // 保存消息时包含引用
+                          chatService.db.saveMessage(currentChatId, {
+                            ...lastMessage,
+                            references: references || []
+                          }, userSession.user.id)
                             .catch(error => console.error('Failed to save AI message:', error))
 
                           // 如果是新会话的第一次对话，更新聊天历史
@@ -128,12 +136,10 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                               { id: currentChatId, title, timestamp: new Date() },
                               ...get().chatHistory
                             ]
-                            // 更新聊天历史
                             set({ 
                               isTyping: false,
                               chatHistory: updatedHistory
                             })
-                            // 保存到本地存储
                             chatService.saveHistory(updatedHistory)
                           } else {
                             set({ isTyping: false })
@@ -154,7 +160,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
             }
           )
         } catch (error) {
-          console.error('Failed to save user message:', error)
+          console.error('Failed to process message:', error)
           set(state => {
             const messages = [...state.messages]
             messages[messages.length - 1] = {

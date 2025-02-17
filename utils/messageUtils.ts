@@ -4,10 +4,14 @@ export const messageUtils = {
   convertDates: (messages: any): Message[] => {
     if (!Array.isArray(messages)) return []
     return messages
-      .map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp || Date.now())
-      }))
+      .map(msg => {
+        const { references, ...rest } = msg
+        return {
+          ...rest,
+          timestamp: new Date(msg.timestamp || Date.now()),
+          references: references || []
+        }
+      })
       .filter(msg => {
         if (msg.role === 'user') return msg.content.trim().length > 0
         if (msg.role === 'assistant') {
