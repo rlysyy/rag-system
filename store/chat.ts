@@ -1,16 +1,40 @@
 'use client'
 
 import { create } from 'zustand'
-import type { Message, ChatStore, ChatHistory } from '@/types/chat'
+import type { Message, ChatHistory } from '@/types/chat'
 import { createSession, converseWithAgent } from '@/services/agent'
 import { chatService } from '@/services/chatService'
 import { storage } from '@/lib/storage'
 import { STORAGE_KEYS } from '@/constants/storage'
 import { getAiService } from '@/services/aiServiceFactory'
 import { AiServiceType } from '@/types/ai'
+import { SDCAIService } from '@/services/aiService'
+import { DocumentReference } from '@/types/sdcAi'
+
+// 重命名本地接口
+interface ChatStoreState {
+  messages: Message[]
+  chatHistory: ChatHistory[]
+  currentChatId: string
+  isLoading: boolean
+  isTyping: boolean
+  shouldStop: boolean
+  stopGeneration: () => void
+  stoppedContent: Record<string, boolean>
+  saveTimeout?: NodeJS.Timeout
+  setStopGeneration: (stop: boolean) => void
+  stopCurrentResponse: () => void
+  stopTyping: () => void
+  addMessage: (message: Message, userSession?: any) => Promise<void>
+  loadChat: (chatId: string, userSession?: any) => Promise<void>
+  clearMessages: () => Promise<void>
+  updateLastMessage: (content: string) => void
+  setMessages: (messages: Message[]) => void
+  setChatHistory: (history: ChatHistory[]) => void
+}
 
 // 创建聊天状态管理store
-export const useChatStore = create<ChatStore>()((set, get) => {
+export const useChatStore = create<ChatStoreState>()((set, get) => {
   const { messages, chatHistory, currentChatId } = typeof window === 'undefined' 
     ? { 
         messages: [], 
@@ -20,6 +44,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
     : chatService.initialize()
 
   let lastSavedContent = ''  // 用于跟踪最后保存的内容
+  let lastSavedAnswer = ''  // 跟踪最后保存到DB的内容
 
   return {
     messages,
@@ -27,21 +52,69 @@ export const useChatStore = create<ChatStore>()((set, get) => {
     currentChatId,
     isLoading: false,
     isTyping: false,
-    stopGeneration: false,
-    stoppedContent: {},
-
-    setStopGeneration: (stop: boolean) => set({ stopGeneration: stop }),
-    
-    stopCurrentResponse: () => {
-      const { messages } = get()
+    shouldStop: false,
+    stopGeneration: () => {
+      const { messages, chatHistory, currentChatId } = get()
       const lastMessage = messages[messages.length - 1]
+      
+      // 中断 AI 服务的请求
+      const aiService = getAiService()
+      if (aiService.abort) {  // 直接检查 abort 方法
+        aiService.abort()
+      }
+      
       if (lastMessage?.role === 'assistant') {
+        const title = messages[messages.length - 2]?.content?.slice(0, 30) || '新对话'
+        
+        // 检查是否已存在相同 ID 的历史记录
+        const updatedHistory = chatHistory.some(chat => chat.id === currentChatId)
+          ? chatHistory
+          : [
+              { 
+                id: currentChatId, 
+                title, 
+                timestamp: new Date() 
+              },
+              ...chatHistory
+            ]
+
+        // 如果最后一条消息是空的，就移除它
+        const updatedMessages = lastMessage.content.trim() === '' 
+          ? messages.slice(0, -1)  // 移除最后一条空消息
+          : messages
+
         set({ 
-          stopGeneration: true,
+          shouldStop: true,
+          isLoading: false,
           isTyping: false,
-          isLoading: false
+          chatHistory: updatedHistory,
+          messages: updatedMessages  // 更新消息列表
+        })
+
+        // 只在添加新记录时保存历史
+        if (!chatHistory.some(chat => chat.id === currentChatId)) {
+          chatService.saveHistory(updatedHistory)
+        }
+        chatService.saveMessages(currentChatId, updatedMessages)
+        storage.set(STORAGE_KEYS.LAST_CHAT_ID, currentChatId)  // 更新 last-chat-id
+      } else {
+        set({ 
+          shouldStop: true,
+          isLoading: false,
+          isTyping: false
         })
       }
+    },
+    stoppedContent: {},
+
+    setStopGeneration: (stop: boolean) => set({ shouldStop: stop }),
+    
+    stopCurrentResponse: () => {
+      set({ 
+        shouldStop: true,
+        isTyping: false,
+        isLoading: false
+      })
     },
 
     stopTyping: () => set({ isTyping: false }),
@@ -83,13 +156,32 @@ export const useChatStore = create<ChatStore>()((set, get) => {
           await aiService.processMessage(
             message.content,
             currentChatId,
-            ({ answer, references }) => {
-              console.log('Store: Progress callback received:', { answer, references })
+            ({ answer, references }: { answer: string; references?: DocumentReference[] }) => {
+              // 检查是否应该停止
+              if (get().shouldStop) {
+                // 保存当前内容到数据库和本地
+                const currentMessages = get().messages
+                const lastMessage = currentMessages[currentMessages.length - 1]
+                if (lastMessage?.role === 'assistant' && 
+                    lastMessage.content !== lastSavedAnswer) {  // 只在内容变化时保存
+                  if (userSession?.user?.id) {
+                    lastSavedAnswer = lastMessage.content  // 更新已保存内容
+                    chatService.db.saveMessage(currentChatId, {
+                      ...lastMessage,
+                      references: references || []
+                    }, userSession.user.id)
+                      .catch(error => console.error('Failed to save AI message:', error))
+                  }
+                  chatService.saveMessages(currentChatId, currentMessages)
+                }
+                return // 停止继续处理
+              }
+
+              // 如果没有停止，继续原来的处理逻辑
               if (!answer || 
                   answer.includes('is running') || 
                   answer.includes('生成回答') ||
                   answer === '') {
-                console.log('Store: Skipping invalid answer')
                 return
               }
 
@@ -99,7 +191,6 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                 const lastMessage = newMessages[newMessages.length - 1]
                 
                 if (lastMessage?.role === 'assistant') {
-                  // 第一个数据块，设置内容并开始打字效果
                   if (isFirstChunk) {
                     isFirstChunk = false
                     lastMessage.content = answer
@@ -107,7 +198,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                     return {
                       messages: newMessages,
                       isTyping: true,
-                      isLoading: false
+                      isLoading: true
                     }
                   }
 
@@ -119,10 +210,10 @@ export const useChatStore = create<ChatStore>()((set, get) => {
 
                     clearTimeout(state.saveTimeout)
                     const saveTimeout = setTimeout(() => {
-                      if (lastSavedContent !== answer) {
+                      if (lastSavedContent !== answer && answer !== lastSavedAnswer) {
                         if (userSession?.user?.id) {
                           lastSavedContent = answer
-                          // 保存消息时包含引用
+                          lastSavedAnswer = answer
                           chatService.db.saveMessage(currentChatId, {
                             ...lastMessage,
                             references: references || []
@@ -130,7 +221,7 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                             .catch(error => console.error('Failed to save AI message:', error))
 
                           // 如果是新会话的第一次对话，更新聊天历史
-                          if (newMessages.length === 3) { // 欢迎消息+用户消息 + AI回复
+                          if (newMessages.length === 3) {
                             const title = message.content.slice(0, 30)
                             const updatedHistory = [
                               { id: currentChatId, title, timestamp: new Date() },
@@ -138,11 +229,17 @@ export const useChatStore = create<ChatStore>()((set, get) => {
                             ]
                             set({ 
                               isTyping: false,
+                              isLoading: false,
+                              shouldStop: false,
                               chatHistory: updatedHistory
                             })
                             chatService.saveHistory(updatedHistory)
                           } else {
-                            set({ isTyping: false })
+                            set({ 
+                              isTyping: false,
+                              isLoading: false,
+                              shouldStop: false
+                            })
                           }
                         }
                       }                   
@@ -202,19 +299,21 @@ export const useChatStore = create<ChatStore>()((set, get) => {
       const { messages, currentChatId, chatHistory } = get()
       const newChatId = crypto.randomUUID()
 
-      // 如果当前会话有内容，保存到历史
-      if (messages.some(m => m.role === 'user')) {
+      // 如果当前会话有内容且不在历史记录中，保存到历史
+      if (messages.some(m => m.role === 'user') && 
+          !chatHistory.some(chat => chat.id === currentChatId)) {
         const firstUserMessage = messages.find(m => m.role === 'user')
         if (firstUserMessage) {
           const title = firstUserMessage.content.slice(0, 30)
           chatService.saveMessages(currentChatId, messages)
           
-          set(state => ({
-            chatHistory: [
-              { id: currentChatId, title, timestamp: new Date() },
-              ...state.chatHistory.filter(h => h.id !== currentChatId)
-            ]
-          }))
+          const updatedHistory = [
+            { id: currentChatId, title, timestamp: new Date() },
+            ...chatHistory
+          ]
+          
+          set({ chatHistory: updatedHistory })
+          chatService.saveHistory(updatedHistory)
         }
       }
 

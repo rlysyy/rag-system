@@ -3,7 +3,7 @@
 import { useState, FormEvent, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send } from 'lucide-react'
+import { Send, Square } from 'lucide-react'
 import { useChatStore } from '@/store/chat'
 import type { Message } from '@/types/chat'
 import { useSession } from 'next-auth/react'
@@ -14,7 +14,7 @@ import { useSession } from 'next-auth/react'
  */
 export function Sender() {
   // 从 store 获取状态和方法
-  const { addMessage, isLoading } = useChatStore()
+  const { addMessage, isLoading, isTyping, stopGeneration } = useChatStore()
   const { data: session } = useSession()
   
   // 本地状态
@@ -66,6 +66,11 @@ export function Sender() {
     }
   }
 
+  const handleStop = (e: React.MouseEvent) => {
+    e.preventDefault()
+    stopGeneration()
+  }
+
   return (
     <form onSubmit={(e: FormEvent) => { e.preventDefault(); handleSend() }} className="p-4">
       <div className="relative">
@@ -75,17 +80,34 @@ export function Sender() {
           onChange={e => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="输入消息..."
-          className="resize-none pr-14 min-h-[56px] max-h-[200px] overflow-hidden py-4 leading-[1.5] text-base font-normal"
+          className="resize-none pr-24 min-h-[56px] max-h-[200px] overflow-hidden py-4 leading-[1.5] text-base font-normal"
           rows={1}
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!content.trim()}
-          className="absolute right-2 top-[13px]"
-        >
-          <Send className="h-5 w-5" />
-        </Button>
+        <div className="absolute right-2 top-[13px] flex gap-2">
+          {(isLoading || isTyping) ? (
+            <div className="relative">
+              <div className="absolute -inset-0.5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={handleStop}
+                className="rounded-full relative z-10 bg-background hover:bg-background/80 text-primary hover:text-primary/80"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!content.trim()}
+              className="rounded-full hover:bg-primary/90"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   )

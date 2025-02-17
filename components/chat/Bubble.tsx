@@ -34,7 +34,7 @@ export function Bubble({ message, isLast, isNewResponse }: {
     message.content.includes('running') ||
     message.content.includes('生成回答')
   )
-  const showLoading = isLast && isLoading && !isTyping
+  const showLoading = isLast && isLoading && !isTyping && !message.content  // 只在没有内容时显示加载动画
   const shouldShowTyping = !isUser && isLast && !isLoadingMessage && isTyping
   
   const [isTypingComplete, setIsTypingComplete] = useState(true)
