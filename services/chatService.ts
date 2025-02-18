@@ -46,6 +46,7 @@ export const chatService = {
     }
   },
 
+  // 保存消息
   saveMessages: (chatId: string, messages: Message[]) => {
     try {
       const messagesToSave = messages.map(msg => ({
@@ -63,10 +64,12 @@ export const chatService = {
     }
   },
 
+  // 保存对话历史
   saveHistory: (history: ChatHistory[]) => {
     storage.set(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(history))
   },
 
+  // 保存消息 
   db: {
     async saveMessage(sessionId: string, message: Message, userId: string) {
       try {
@@ -90,6 +93,7 @@ export const chatService = {
       }
     },
 
+    // 加载用户会话
     async loadUserSessions(userId: string) {
       try {
         const response = await fetch(`/api/chat/sessions?userId=${userId}`, {
@@ -105,6 +109,7 @@ export const chatService = {
       }
     },
 
+    // 加载会话消息
     async loadSessionMessages(sessionId: string) {
       try {
         const url = `/api/chat/messages?sessionId=${sessionId}`
@@ -127,6 +132,7 @@ export const chatService = {
       }
     },
 
+    // 创建会话
     async createSession(userId: string, title: string) {
       try {
         console.log('Creating session with:', { userId, title })
@@ -154,6 +160,7 @@ export const chatService = {
       }
     },
 
+    // 更新对话标题 
     updateChatTitle: async (chatId: string, newTitle: string) => {
       try {
         const response = await fetch(`/api/chat/title`, {

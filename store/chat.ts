@@ -7,6 +7,7 @@ import { storage } from '@/lib/storage'
 import { STORAGE_KEYS } from '@/constants/storage'
 import { getAiService } from '@/services/aiServiceFactory'
 import { DocumentReference } from '@/types/sdcAi'
+import { messageUtils } from '@/utils/messageUtils'
 
 // 重命名本地接口
 interface ChatStoreState {
@@ -112,8 +113,10 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
     },
     stoppedContent: {},
 
+    // 设置停止生成
     setStopGeneration: (stop: boolean) => set({ shouldStop: stop }),
     
+    // 停止当前响应
     stopCurrentResponse: () => {
       set({ 
         shouldStop: true,
@@ -122,8 +125,10 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       })
     },
 
+    // 停止输入
     stopTyping: () => set({ isTyping: false }),
 
+    // 添加消息
     addMessage: async (message: Message, userSession?: any) => {
       if (message.role === 'user') {
         try {
@@ -291,18 +296,43 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
     // 加载指定会话
     loadChat: async (chatId: string, userSession?: any) => {
       set({ currentChatId: chatId })
-      storage.set(STORAGE_KEYS.LAST_CHAT_ID, chatId) // 保存最后访问的会话ID
+      storage.set(STORAGE_KEYS.LAST_CHAT_ID, chatId)
       
+      // 先尝试从本地存储加载消息
+      const savedMessages = storage.get(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
+      
+      if (savedMessages) {
+        try {
+          const parsedMessages = JSON.parse(savedMessages)
+          const messages = messageUtils.convertDates(parsedMessages)
+          set({ messages }) // 设置消息状态
+          return // 如果本地有数据，直接返回
+        } catch (error) {
+          console.error('Failed to parse local messages:', error)
+          // 解析失败继续从数据库加载
+        }
+      }
+      
+      // 本地没有数据或解析失败时，从数据库加载
       if (userSession?.user?.id) {
         try {
           const dbMessages = await chatService.db.loadSessionMessages(chatId)
-          console.log('Store: Loaded messages:', dbMessages)
           if (dbMessages && dbMessages.length > 0) {
-            set({ messages: dbMessages }) // 设置消息状态
-            chatService.saveMessages(chatId, dbMessages) // 保存消息到本地Storage
+            set({ messages: dbMessages })
+            // 保存到本地存储以便下次使用
+            chatService.saveMessages(chatId, dbMessages)
+          } else {
+            // 如果数据库也没有消息，设置欢迎消息
+            const welcomeMessage = messageUtils.createWelcomeMessage()
+            set({ messages: [welcomeMessage] })
+            chatService.saveMessages(chatId, [welcomeMessage])
           }
         } catch (error) {
           console.error('Failed to load chat:', error)
+          // 加载失败时也设置欢迎消息
+          const welcomeMessage = messageUtils.createWelcomeMessage()
+          set({ messages: [welcomeMessage] })
+          chatService.saveMessages(chatId, [welcomeMessage])
         }
       }
     },
