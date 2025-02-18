@@ -85,19 +85,19 @@ export function ChatSidebar() {
               新建对话
             </Button>
           </div>
-          
           <div className="flex-1 overflow-auto p-2">
             {chatHistory.map((chat) => (
               <div
                 key={chat.id}
                 className={cn(
-                  "group relative flex items-center rounded-lg mb-1 transition-colors",
+                  "group relative flex items-center rounded-lg mb-1",
                   chat.id === currentChatId 
                     ? "bg-primary/10"
-                    : "bg-transparent hover:bg-primary/5",
+                    : "hover:bg-accent/50",
                   isResponding && "opacity-50 cursor-not-allowed"
                 )}
               >
+                {/* 编辑状态 */}
                 {editingId === chat.id ? (
                   <div className="flex-1 flex items-center gap-2 p-2">
                     <Input
@@ -120,10 +120,14 @@ export function ChatSidebar() {
                     </div>
                   </div>
                 ) : (
+                  // 非编辑状态
                   <>
                     <Button
                       variant="ghost"
-                      className="flex-1 justify-start px-3 py-2 text-sm font-normal truncate rounded-lg"
+                      className={cn(
+                        "flex-1 justify-start px-3 py-2 text-sm font-normal truncate rounded-lg",
+                        "hover:bg-transparent"
+                      )}
                       onClick={() => handleSelectChat(chat.id)}
                       disabled={isResponding}
                     >
@@ -134,7 +138,11 @@ export function ChatSidebar() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="absolute right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                          className={cn(
+                            "absolute right-2 h-7 w-7 opacity-0 group-hover:opacity-100",
+                            "transition-opacity hover:bg-transparent",
+                            "rounded-lg"
+                          )}
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>

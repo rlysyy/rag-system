@@ -346,6 +346,7 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       chatService.saveMessages(newChatId, [welcomeMessage])
     },
 
+    // 更新最后一条消息
     updateLastMessage: (content: string) => {
       const { messages, currentChatId } = get()
       const lastMessage = messages[messages.length - 1]
@@ -357,15 +358,18 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       }
     },
 
+    // 设置对话消息
     setMessages: (messages: Message[]) => {
       set({ messages })
     },
     
+    // 设置对话历史
     setChatHistory: (history: ChatHistory[]) => {
       set({ chatHistory: history })
       chatService.saveHistory(history)
     },
 
+    // 更新对话标题
     updateChatTitle: async (chatId: string, newTitle: string) => {
       const { chatHistory } = get()
       const updatedHistory = chatHistory.map(chat => 
