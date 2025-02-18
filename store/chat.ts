@@ -64,49 +64,26 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       }
       
       if (lastMessage?.role === 'assistant') {
-        // 只有当有用户消息时才添加到历史记录
-        const hasUserMessage = messages.some(m => m.role === 'user')
-        const title = hasUserMessage ? 
-          messages.find(m => m.role === 'user')?.content?.slice(0, 30) || '新对话' :
-          '新对话'
-        
         // 生成唯一的消息ID
         const messageId = `${currentChatId}-${Date.now()}`
-        
-        // 只在有用户消息且不在历史记录中时，才添加到历史
-        const updatedHistory = (hasUserMessage && !chatHistory.some(chat => chat.id === currentChatId))
-          ? [
-              { 
-                id: currentChatId, 
-                title, 
-                timestamp: new Date() 
-              },
-              ...chatHistory
-            ]
-          : chatHistory
 
         // 如果最后一条消息是空的，就移除它
         const updatedMessages = lastMessage.content.trim() === '' 
           ? messages.slice(0, -1)
           : messages.map(msg => ({
               ...msg,
-              id: msg.id || messageId // 确保每条消息都有唯一ID
+              id: msg.id || messageId
             }))
 
         set({ 
           shouldStop: true,
           isLoading: false,
           isTyping: false,
-          chatHistory: updatedHistory,
           messages: updatedMessages
         })
 
-        // 只在有用户消息时保存历史
-        if (hasUserMessage && !chatHistory.some(chat => chat.id === currentChatId)) {
-          chatService.saveHistory(updatedHistory)
-        }
+        // 只保存消息，不处理历史记录
         chatService.saveMessages(currentChatId, updatedMessages)
-        storage.set(STORAGE_KEYS.LAST_CHAT_ID, currentChatId)
       } else {
         set({ 
           shouldStop: true,
@@ -149,14 +126,16 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
             await chatService.db.saveMessage(currentChatId, userMessage, userSession.user.id)
           }
 
-          // 只添加用户消息，不设置 loading
-          const updatedMessages = [...currentMessages, userMessage]
-          set({ messages: updatedMessages })
+          // 添加用户消息
+          set({ 
+            messages: [...currentMessages, userMessage],
+            isLoading: true 
+          })
 
           // 获取当前配置的 AI 服务
           const aiService = getAiService()
 
-          // 添加空的 AI 消息，并设置 loading 状态
+          // 添加空的 AI 消息
           const aiMessage: Message = {
             id: `${currentChatId}-ai-${Date.now()}`,
             role: 'assistant',
@@ -165,15 +144,12 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
             references: []
           }
 
+          // 添加 AI 消息
           set(state => ({ 
-            messages: [...state.messages, aiMessage],
-            isLoading: true
+            messages: [...state.messages, aiMessage]
           }))
 
-          let isFirstChunk = true
-
           // 使用 AI 服务处理消息
-          console.log('Store: Starting AI service processing')
           await aiService.processMessage(
             message.content,
             currentChatId,
@@ -212,18 +188,6 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
                 const lastMessage = newMessages[newMessages.length - 1]
                 
                 if (lastMessage?.role === 'assistant') {
-                  if (isFirstChunk) {
-                    isFirstChunk = false
-                    lastMessage.content = answer
-                    lastMessage.references = references || []
-                    return {
-                      messages: newMessages,
-                      isTyping: true,
-                      isLoading: true
-                    }
-                  }
-
-                  // 后续数据块，累积内容
                   if (answer.length > lastMessage.content.length) {
                     lastMessage.content = answer
                     // 确保引用被正确设置
@@ -277,15 +241,22 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
               })
             }
           )
+
+          // 保存完整的消息记录
+          const finalMessages = get().messages
+          chatService.saveMessages(currentChatId, finalMessages)
+
         } catch (error) {
           console.error('Failed to process message:', error)
           set(state => {
             const messages = [...state.messages]
-            messages[messages.length - 1] = {
-              role: 'assistant',
-              content: '抱歉，发生了错误。请稍后重试。',
-              timestamp: new Date(),
-              references: []
+            if (messages.length > 0) {
+              messages[messages.length - 1] = {
+                role: 'assistant',
+                content: '抱歉，发生了错误。请稍后重试。',
+                timestamp: new Date(),
+                references: []
+              }
             }
             return { 
               messages,
@@ -302,11 +273,11 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       const { messages, currentChatId, chatHistory } = get()
 
       // 只有当有用户消息且不在历史记录中时，才保存当前会话
-      if (messages.some(m => m.role === 'user') && 
+      if (messages.length > 1 && // 确保不只有欢迎消息
+          messages.some(m => m.role === 'user') && 
           !chatHistory.some(chat => chat.id === currentChatId)) {
         const firstUserMessage = messages.find(m => m.role === 'user')
         if (firstUserMessage) {
-          console.log('firstUserMessage', firstUserMessage)
           const title = firstUserMessage.content.slice(0, 30)
           chatService.saveMessages(currentChatId, messages)
           
@@ -316,12 +287,11 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
           ]
           
           set({ chatHistory: updatedHistory })
-          console.log('storage.set chatHistory', updatedHistory)
           chatService.saveHistory(updatedHistory)
         }
       }
 
-      // 创建新会话，但不添加到历史记录
+      // 创建新会话
       const newChatId = crypto.randomUUID()
       const welcomeMessage = messageUtils.createWelcomeMessage()
 
@@ -330,7 +300,6 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
         messages: [welcomeMessage]
       })
 
-      // 只保存消息，不保存到历史记录
       chatService.saveMessages(newChatId, [welcomeMessage])
     },
 
@@ -423,30 +392,37 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
 
     // 删除对话
     deleteChat: async (chatId: string) => {
-      const { chatHistory, currentChatId, createNewChat } = get()
+      const { chatHistory, currentChatId } = get()
 
-      // 筛选出不是当前会话的对话
-      console.log('chatHistory chatId', chatId)
-      const updatedHistory = chatHistory.filter(chat => chat.id !== chatId)
-      
-      // 更新对话历史
-      console.log('updatedHistory', updatedHistory)
-      set({ chatHistory: updatedHistory })
-      
-      // 保存到本地存储
-      chatService.saveHistory(updatedHistory)
-      
-      // 保存到数据库
       try {
+        // 先删除数据库和本地存储
+        console.log('deleteChat chatId', chatId)
         await chatService.db.deleteChat(chatId)
-
-        // 删除本地消息
-        console.log('storage.remove chatId', `${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
         storage.remove(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
         
-        // 如果删除的是当前会话，创建新会话
+        // 更新历史记录
+        const updatedHistory = chatHistory.filter(chat => chat.id !== chatId)
+        set({ 
+          chatHistory: updatedHistory,
+          // 如果删除的是当前会话，清空消息
+          messages: chatId === currentChatId ? [] : get().messages
+        })
+        
+        // 保存更新后的历史记录
+        chatService.saveHistory(updatedHistory)
+        
+        // 如果删除的是当前会话，创建新的空会话
         if (chatId === currentChatId) {
-          await createNewChat()
+          const newChatId = crypto.randomUUID()
+          const welcomeMessage = messageUtils.createWelcomeMessage()
+          
+          set({
+            currentChatId: newChatId,
+            messages: [welcomeMessage]
+          })
+          
+          // 只保存欢迎消息
+          // chatService.saveMessages(newChatId, [welcomeMessage])
         }
       } catch (error) {
         console.error('Failed to delete chat:', error)
