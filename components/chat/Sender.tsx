@@ -66,6 +66,9 @@ export function Sender() {
     }
   }
 
+  /**
+   * 停止生成处理函数
+   */
   const handleStop = (e: React.MouseEvent) => {
     e.preventDefault()
     stopGeneration()
@@ -83,7 +86,7 @@ export function Sender() {
           className="resize-none pr-24 min-h-[56px] max-h-[200px] overflow-hidden py-4 leading-[1.5] text-base font-normal"
           rows={1}
         />
-        <div className="absolute right-2 top-[13px] flex gap-2">
+        <div className="absolute right-2 top-[10px] flex gap-2">
           {(isLoading || isTyping) ? (
             <div className="relative">
               <div className="absolute -inset-0.5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
