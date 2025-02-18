@@ -23,8 +23,7 @@ export function ChatSidebar() {
     isLoading,
     isTyping,
     updateChatTitle,
-    deleteChat,
-    setChatHistory
+    deleteChat
   } = useChatStore()
   const { data: session } = useSession()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -69,7 +68,7 @@ export function ChatSidebar() {
   return (
     <div className="relative h-full flex">
       <div className={cn(
-        "h-full bg-background border-r transition-all duration-300",
+        "h-full bg-background border-r transform duration-300 ease-in-out",
         isExpanded ? "w-64" : "w-0"
       )}>
         <div className={cn(
