@@ -2,13 +2,10 @@
 
 import { create } from 'zustand'
 import type { Message, ChatHistory } from '@/types/chat'
-import { createSession, converseWithAgent } from '@/services/agent'
 import { chatService } from '@/services/chatService'
 import { storage } from '@/lib/storage'
 import { STORAGE_KEYS } from '@/constants/storage'
 import { getAiService } from '@/services/aiServiceFactory'
-import { AiServiceType } from '@/types/ai'
-import { SDCAIService } from '@/services/aiService'
 import { DocumentReference } from '@/types/sdcAi'
 
 // 重命名本地接口
@@ -301,8 +298,8 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
           const dbMessages = await chatService.db.loadSessionMessages(chatId)
           console.log('Store: Loaded messages:', dbMessages)
           if (dbMessages && dbMessages.length > 0) {
-            set({ messages: dbMessages })
-            chatService.saveMessages(chatId, dbMessages)
+            set({ messages: dbMessages }) // 设置消息状态
+            chatService.saveMessages(chatId, dbMessages) // 保存消息到本地Storage
           }
         } catch (error) {
           console.error('Failed to load chat:', error)

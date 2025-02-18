@@ -45,6 +45,7 @@ export default function ChatPage() {
       }
     }
 
+    // 如果chatHistory为空，则加载用户数据
     if (chatHistory.length === 0) {
       loadUserData()
     }

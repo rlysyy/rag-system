@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
-import { PlusCircle, MessageSquare, Info, MoreHorizontal, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { PlusCircle, MoreHorizontal, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useChatStore } from '@/store/chat'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -14,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from '@/components/ui/input'
-import { chatService } from '@/services/chatService'
 
 export function ChatSidebar() {
   const { 
@@ -26,50 +24,34 @@ export function ChatSidebar() {
     isTyping,
     updateChatTitle,
     deleteChat,
-    setChatHistory,
-    setMessages
+    setChatHistory
   } = useChatStore()
   const { data: session } = useSession()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [isExpanded, setIsExpanded] = useState(true)
 
-  const isResponding = isLoading || isTyping
+  const isResponding = isLoading || isTyping // 是否正在响应
   
+  // 新建对话
   const handleNewChat = async () => {
     if (isResponding) return
     await clearMessages()
   }
 
+  // 选择对话
   const handleSelectChat = async (chatId: string) => {
     if (isResponding) return
     await loadChat(chatId, session)
   }
 
-  const formatDate = (timestamp: string | Date) => {
-    try {
-      const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp
-      if (isNaN(date.getTime())) {
-        return '无效日期'
-      }
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    } catch (error) {
-      console.error('Date formatting error:', error)
-      return '无效日期'
-    }
-  }
-
+  // 重命名对话
   const handleEdit = (id: string, title: string) => {
     setEditingId(id)
     setEditingTitle(title)
   }
 
+  // 保存重命名
   const handleSave = async (id: string) => {
     if (editingTitle.trim()) {
       await updateChatTitle(id, editingTitle.trim())
@@ -77,35 +59,12 @@ export function ChatSidebar() {
     }
   }
 
+  // 删除对话
   const handleDelete = async (id: string) => {
     if (confirm('确定要删除这个对话吗？')) {
       await deleteChat(id)
     }
   }
-
-  // 在组件挂载时加载用户的聊天历史和当前会话消息
-  useEffect(() => {
-    async function loadUserData() {
-      if (session?.user?.id) {
-        try {
-          // 从数据库加载用户的聊天会话
-          const sessions = await chatService.db.loadUserSessions(session.user.id)
-          if (sessions && sessions.length > 0) {
-            setChatHistory(sessions)
-            
-            // 如果有当前会话ID，加载该会话的消息
-            if (currentChatId) {
-              await loadChat(currentChatId, session)
-            }
-          }
-        } catch (error) {
-          console.error('Failed to load chat data:', error)
-        }
-      }
-    }
-
-    loadUserData()
-  }, [session, currentChatId, setChatHistory, loadChat])
 
   return (
     <div className="relative h-full flex">
