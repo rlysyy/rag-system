@@ -18,12 +18,12 @@ export function ChatSidebar() {
   const { 
     chatHistory, 
     currentChatId, 
-    clearMessages, 
     loadChat,
     isLoading,
     isTyping,
     updateChatTitle,
-    deleteChat
+    deleteChat,
+    createNewChat
   } = useChatStore()
   const { data: session } = useSession()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export function ChatSidebar() {
   // 新建对话
   const handleNewChat = async () => {
     if (isResponding) return
-    await clearMessages()
+    await createNewChat()
   }
 
   // 选择对话

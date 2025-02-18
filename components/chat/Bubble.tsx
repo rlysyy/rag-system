@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button'
 import { TypewriterText } from './TypewriterText'
 import { useChatStore } from '@/store/chat'
 import Image from 'next/image'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize from 'rehype-sanitize'
 
 interface DocumentReference {
   file_link: string;
@@ -102,7 +106,9 @@ export function Bubble({ message, isLast, isNewResponse }: {
 
           <div className={cn(
             "rounded-lg px-4 py-2.5 text-sm w-full",
-            isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+            isUser 
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted/40"
           )}>
             {showLoading ? (
               <div className="flex gap-1.5 h-4 items-center">
@@ -111,16 +117,48 @@ export function Bubble({ message, isLast, isNewResponse }: {
                 <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
               </div>
             ) : (
-              <p className="whitespace-pre-wrap break-words">
+              <div className={cn(
+                "prose prose-sm max-w-none",
+                isUser 
+                  ? "prose-invert"
+                  : "dark:prose-invert"
+              )}>
                 {!shouldShowTyping ? (
-                  message.content
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                    components={{
+                      code: ({ className, children, ...props }: React.HTMLProps<HTMLElement>) => {
+                        return (
+                          <code
+                            className={cn(
+                              "relative rounded bg-muted/50 px-[0.3rem] py-[0.2rem] font-mono text-sm",
+                              className
+                            )}
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        )
+                      },
+                      pre: ({ children }: React.HTMLProps<HTMLPreElement>) => {
+                        return (
+                          <pre className="relative rounded-lg bg-muted/50 p-4">
+                            {children}
+                          </pre>
+                        )
+                      }
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 ) : (
                   <TypewriterText 
                     content={message.content} 
                     onComplete={() => setIsTypingComplete(true)}
                   />
                 )}
-              </p>
+              </div>
             )}
           </div>
 
@@ -133,7 +171,7 @@ export function Bubble({ message, isLast, isNewResponse }: {
         </div>
       </div>
 
-      {/* 引用文件列表 - 只在非用户消息、有引用、且打字完成时显示 */}
+      {/* 引用文件列表部分保持不变 */}
       {!isUser && message.references && message.references.length > 0 && (
         <div className="pl-11">
           <div className="w-[calc(100%-84px)] flex flex-col gap-2">

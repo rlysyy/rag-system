@@ -66,6 +66,14 @@ export const chatService = {
 
   // 保存对话历史
   saveHistory: (history: ChatHistory[]) => {
+    // 如果历史记录为空数组，应该清除本地存储
+    if (!history || history.length === 0) {
+      console.log('history is empty, remove chatHistory', STORAGE_KEYS.CHAT_HISTORY)
+      storage.remove(STORAGE_KEYS.CHAT_HISTORY)
+      return
+    }
+    
+    // 否则保存新的历史记录
     storage.set(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(history))
   },
 

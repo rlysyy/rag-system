@@ -8,5 +8,10 @@ export const storage = {
     if (typeof window === 'undefined') return
     const valueToStore = typeof value === 'string' ? value : JSON.stringify(value)
     localStorage.setItem(key, valueToStore)
+  },
+
+  remove: (key: string) => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem(key)
   }
 } 

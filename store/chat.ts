@@ -25,7 +25,7 @@ interface ChatStoreState {
   stopTyping: () => void
   addMessage: (message: Message, userSession?: any) => Promise<void>
   loadChat: (chatId: string, userSession?: any) => Promise<void>
-  clearMessages: () => Promise<void>
+  createNewChat: () => Promise<void>
   updateLastMessage: (content: string) => void
   setMessages: (messages: Message[]) => void
   setChatHistory: (history: ChatHistory[]) => void
@@ -64,15 +64,18 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       }
       
       if (lastMessage?.role === 'assistant') {
-        const title = messages[messages.length - 2]?.content?.slice(0, 30) || '新对话'
+        // 只有当有用户消息时才添加到历史记录
+        const hasUserMessage = messages.some(m => m.role === 'user')
+        const title = hasUserMessage ? 
+          messages.find(m => m.role === 'user')?.content?.slice(0, 30) || '新对话' :
+          '新对话'
         
         // 生成唯一的消息ID
         const messageId = `${currentChatId}-${Date.now()}`
         
-        // 检查是否已存在相同 ID 的历史记录
-        const updatedHistory = chatHistory.some(chat => chat.id === currentChatId)
-          ? chatHistory
-          : [
+        // 只在有用户消息且不在历史记录中时，才添加到历史
+        const updatedHistory = (hasUserMessage && !chatHistory.some(chat => chat.id === currentChatId))
+          ? [
               { 
                 id: currentChatId, 
                 title, 
@@ -80,6 +83,7 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
               },
               ...chatHistory
             ]
+          : chatHistory
 
         // 如果最后一条消息是空的，就移除它
         const updatedMessages = lastMessage.content.trim() === '' 
@@ -97,8 +101,8 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
           messages: updatedMessages
         })
 
-        // 保存状态
-        if (!chatHistory.some(chat => chat.id === currentChatId)) {
+        // 只在有用户消息时保存历史
+        if (hasUserMessage && !chatHistory.some(chat => chat.id === currentChatId)) {
           chatService.saveHistory(updatedHistory)
         }
         chatService.saveMessages(currentChatId, updatedMessages)
@@ -293,60 +297,16 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       }
     },
 
-    // 加载指定会话
-    loadChat: async (chatId: string, userSession?: any) => {
-      set({ currentChatId: chatId })
-      storage.set(STORAGE_KEYS.LAST_CHAT_ID, chatId)
-      
-      // 先尝试从本地存储加载消息
-      const savedMessages = storage.get(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
-      
-      if (savedMessages) {
-        try {
-          const parsedMessages = JSON.parse(savedMessages)
-          const messages = messageUtils.convertDates(parsedMessages)
-          set({ messages }) // 设置消息状态
-          return // 如果本地有数据，直接返回
-        } catch (error) {
-          console.error('Failed to parse local messages:', error)
-          // 解析失败继续从数据库加载
-        }
-      }
-      
-      // 本地没有数据或解析失败时，从数据库加载
-      if (userSession?.user?.id) {
-        try {
-          const dbMessages = await chatService.db.loadSessionMessages(chatId)
-          if (dbMessages && dbMessages.length > 0) {
-            set({ messages: dbMessages })
-            // 保存到本地存储以便下次使用
-            chatService.saveMessages(chatId, dbMessages)
-          } else {
-            // 如果数据库也没有消息，设置欢迎消息
-            const welcomeMessage = messageUtils.createWelcomeMessage()
-            set({ messages: [welcomeMessage] })
-            chatService.saveMessages(chatId, [welcomeMessage])
-          }
-        } catch (error) {
-          console.error('Failed to load chat:', error)
-          // 加载失败时也设置欢迎消息
-          const welcomeMessage = messageUtils.createWelcomeMessage()
-          set({ messages: [welcomeMessage] })
-          chatService.saveMessages(chatId, [welcomeMessage])
-        }
-      }
-    },
-
-    // 清除当前会话
-    clearMessages: async () => {
+    // 创建新会话
+    createNewChat: async () => {
       const { messages, currentChatId, chatHistory } = get()
-      const newChatId = crypto.randomUUID()
 
-      // 如果当前会话有内容且不在历史记录中，保存到历史
+      // 只有当有用户消息且不在历史记录中时，才保存当前会话
       if (messages.some(m => m.role === 'user') && 
           !chatHistory.some(chat => chat.id === currentChatId)) {
         const firstUserMessage = messages.find(m => m.role === 'user')
         if (firstUserMessage) {
+          console.log('firstUserMessage', firstUserMessage)
           const title = firstUserMessage.content.slice(0, 30)
           chatService.saveMessages(currentChatId, messages)
           
@@ -356,23 +316,21 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
           ]
           
           set({ chatHistory: updatedHistory })
+          console.log('storage.set chatHistory', updatedHistory)
           chatService.saveHistory(updatedHistory)
         }
       }
 
-      // 创建新会话
-      const welcomeMessage = {
-        role: 'assistant' as const,
-        content: '你好！我是AI助手，有什么我可以帮你的吗？',
-        timestamp: new Date(),
-        references: []
-      }
+      // 创建新会话，但不添加到历史记录
+      const newChatId = crypto.randomUUID()
+      const welcomeMessage = messageUtils.createWelcomeMessage()
 
       set({
         currentChatId: newChatId,
         messages: [welcomeMessage]
       })
 
+      // 只保存消息，不保存到历史记录
       chatService.saveMessages(newChatId, [welcomeMessage])
     },
 
@@ -419,10 +377,60 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       }
     },
 
+    // 加载指定会话
+    loadChat: async (chatId: string, userSession?: any) => {
+      set({ currentChatId: chatId })
+      storage.set(STORAGE_KEYS.LAST_CHAT_ID, chatId)
+      
+      // 先尝试从本地存储加载消息
+      const savedMessages = storage.get(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
+      
+      if (savedMessages) {
+        try {
+          const parsedMessages = JSON.parse(savedMessages)
+          const messages = messageUtils.convertDates(parsedMessages)
+          set({ messages }) // 设置消息状态
+          return // 如果本地有数据，直接返回
+        } catch (error) {
+          console.error('Failed to parse local messages:', error)
+          // 解析失败继续从数据库加载
+        }
+      }
+      
+      // 本地没有数据或解析失败时，从数据库加载
+      if (userSession?.user?.id) {
+        try {
+          const dbMessages = await chatService.db.loadSessionMessages(chatId)
+          if (dbMessages && dbMessages.length > 0) {
+            set({ messages: dbMessages })
+            // 保存到本地存储以便下次使用
+            chatService.saveMessages(chatId, dbMessages)
+          } else {
+            // 如果数据库也没有消息，设置欢迎消息
+            const welcomeMessage = messageUtils.createWelcomeMessage()
+            set({ messages: [welcomeMessage] })
+            chatService.saveMessages(chatId, [welcomeMessage])
+          }
+        } catch (error) {
+          console.error('Failed to load chat:', error)
+          // 加载失败时也设置欢迎消息
+          const welcomeMessage = messageUtils.createWelcomeMessage()
+          set({ messages: [welcomeMessage] })
+          chatService.saveMessages(chatId, [welcomeMessage])
+        }
+      }
+    },
+
+    // 删除对话
     deleteChat: async (chatId: string) => {
-      const { chatHistory, currentChatId, clearMessages } = get()
+      const { chatHistory, currentChatId, createNewChat } = get()
+
+      // 筛选出不是当前会话的对话
+      console.log('chatHistory chatId', chatId)
       const updatedHistory = chatHistory.filter(chat => chat.id !== chatId)
       
+      // 更新对话历史
+      console.log('updatedHistory', updatedHistory)
       set({ chatHistory: updatedHistory })
       
       // 保存到本地存储
@@ -431,16 +439,20 @@ export const useChatStore = create<ChatStoreState>()((set, get) => {
       // 保存到数据库
       try {
         await chatService.db.deleteChat(chatId)
+
+        // 删除本地消息
+        console.log('storage.remove chatId', `${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
+        storage.remove(`${STORAGE_KEYS.CHAT_MESSAGES}-${chatId}`)
         
-        // 如果删除的是当前会话，清除消息
+        // 如果删除的是当前会话，创建新会话
         if (chatId === currentChatId) {
-          await clearMessages()
+          await createNewChat()
         }
       } catch (error) {
         console.error('Failed to delete chat:', error)
       }
     },
 
-    // ... 其他必要方法
+    // ... 其他必要方法 
   }
 })
