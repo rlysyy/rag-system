@@ -5,24 +5,27 @@ services:
     ports:
       - "60302:3000"
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@db:5433/rag_system
-      - SECRET=Ae7#fK9LqP@2ZxYmN8WpQ!tR1SvC5Xb
-      - NEXTAUTH_SECRET=Ae7#fK9LqP@2ZxYmN8WpQ!tR1SvC5Xb
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXT_PUBLIC_API_BASE_URL=your_api_base_url
-      - NEXT_PUBLIC_SDC_Document_URL=your_document_url
-      - NEXT_PUBLIC_AGENT_ID=d333a4d0d24c11ef95190242ac120006
-      - API_KEY=ragflow-gyYzZiMGNlZGM1MDExZWY4Y2Y3MDI0Mm
-      - NEXT_PUBLIC_SDC_API_URL=http://61.169.93.26:60305
-      - NEXT_PUBLIC_SDC_Document_URL=http://61.169.93.26:60304
-      - NEXT_PUBLIC_SDC_KB_IDS=cf21f22ed49111ef9bbf0242ac1b0006
+      - NODE_ENV=${NODE_ENV}
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET=${SECRET}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_URL_INTERNAL=${NEXTAUTH_URL_INTERNAL}
+      - NEXTAUTH_TRUSTED_HOSTS=${NEXTAUTH_TRUSTED_HOSTS}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+      - NEXT_PUBLIC_SDC_Document_URL=${NEXT_PUBLIC_SDC_Document_URL}
+      - NEXT_PUBLIC_AGENT_ID=${NEXT_PUBLIC_AGENT_ID}
+      - API_KEY=${API_KEY}
+      - NEXT_PUBLIC_SDC_API_URL=${NEXT_PUBLIC_SDC_API_URL}
+      - NEXT_PUBLIC_SDC_KB_IDS=${NEXT_PUBLIC_SDC_KB_IDS}
     depends_on:
       db:
         condition: service_healthy
     restart: always
     networks:
       - rag-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   db:
     image: postgres:15
@@ -30,17 +33,17 @@ services:
     ports:
       - "5433:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=rag_system
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
-      - D:\docker_data\postgres:/var/lib/postgresql/data #windows
-      #- ./data/postgres:/var/lib/postgresql/data  # linux
+      - D:\docker_data\postgres:/var/lib/postgresql/data # Windows
+      #- ./data/postgres:/var/lib/postgresql/data          # Linux
     restart: always
     networks:
       - rag-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -48,4 +51,4 @@ services:
 networks:
   rag-network:
     name: rag-network
-    driver: bridge 
+    driver: bridge
