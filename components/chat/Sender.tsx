@@ -15,6 +15,7 @@ import { useSession } from 'next-auth/react'
 export function Sender() {
   // 从 store 获取状态和方法
   const { addMessage, isLoading, isTyping, stopGeneration } = useChatStore()
+  // 从 session 获取用户信息
   const { data: session } = useSession()
   
   // 本地状态

@@ -43,15 +43,15 @@ export function useSignIn() {
         email: data.email,
         password: data.password,
         redirect: false,  // 禁用自动重定向
-        callbackUrl: '/'  // 添加回调 URL
       })
 
       if (result?.error) {
-        // 如果登录失败，设置错误信息
-        setError(result.error)
+        // 统一错误提示
+        setError('邮箱或密码错误')
       } else {
         // 登录成功，重定向到首页
         router.push('/')
+        router.refresh()
       }
     } catch (error) {
       // 处理验证错误

@@ -22,8 +22,9 @@ export default function SignInForm() {
               id="email"
               name="email"
               type="email"
-              placeholder="your.name@company.com"
+              placeholder="邮箱"
               required
+              autoComplete="email"
             />
           </div>
           <div className="flex flex-col space-y-2">
@@ -32,12 +33,18 @@ export default function SignInForm() {
               id="password"
               name="password" 
               type="password" 
+              placeholder="密码"
               required 
+              autoComplete="current-password"
             />
           </div>
           {error && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error === 'CredentialsSignin' || error === 'User does not exist'
+                  ? '邮箱或密码错误'
+                  : error}
+              </AlertDescription>
             </Alert>
           )}
           <div className="pt-2">

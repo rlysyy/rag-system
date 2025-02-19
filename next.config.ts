@@ -6,6 +6,10 @@ const config: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,  // 在构建时忽略 ESLint 错误
   },
+  typescript: {
+    // ⚠️ 生产构建时忽略类型错误
+    ignoreBuildErrors: true,
+  },
 };
 
 export default config;

@@ -7,6 +7,16 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:postgres@db:5433/rag_system
+      - SECRET=Ae7#fK9LqP@2ZxYmN8WpQ!tR1SvC5Xb
+      - NEXTAUTH_SECRET=Ae7#fK9LqP@2ZxYmN8WpQ!tR1SvC5Xb
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_BASE_URL=your_api_base_url
+      - NEXT_PUBLIC_SDC_Document_URL=your_document_url
+      - NEXT_PUBLIC_AGENT_ID=d333a4d0d24c11ef95190242ac120006
+      - API_KEY=ragflow-gyYzZiMGNlZGM1MDExZWY4Y2Y3MDI0Mm
+      - NEXT_PUBLIC_SDC_API_URL=http://61.169.93.26:60305
+      - NEXT_PUBLIC_SDC_Document_URL=http://61.169.93.26:60304
+      - NEXT_PUBLIC_SDC_KB_IDS=cf21f22ed49111ef9bbf0242ac1b0006
     depends_on:
       db:
         condition: service_healthy

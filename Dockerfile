@@ -34,10 +34,10 @@ COPY --from=builder /app/prisma ./prisma
 
 # 复制启动脚本并设置权限
 COPY start.sh ./
-RUN chmod +x start.sh && \
-    dos2unix start.sh    # 修复可能的行尾问题
+COPY wait-for-it.sh ./
+RUN chmod +x start.sh wait-for-it.sh
 
 EXPOSE 3000
 
-# 使用 bash 显式执行脚本
+# 使用 bash 执行脚本
 CMD ["/bin/bash", "./start.sh"] 

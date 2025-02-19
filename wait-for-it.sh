@@ -10,10 +10,10 @@ cmd="$@"
 # 使用 docker-compose.yml 中设置的密码
 export PGPASSWORD=postgres
 
-# 增加重试次数和间隔时�?max_attempts=30
+max_attempts=30
 attempt=0
 
-until psql -h "db" -U "postgres" -c '\q'; do
+until psql -h "db" -U "postgres" -p 5433 -c '\q'; do
   attempt=$((attempt + 1))
   >&2 echo "Postgres is unavailable - sleeping (attempt $attempt/$max_attempts)"
   
@@ -22,7 +22,7 @@ until psql -h "db" -U "postgres" -c '\q'; do
     exit 1
   fi
   
-  # 增加等待时间�?5 �?  sleep 5
+  sleep 2
 done
 
 >&2 echo "Postgres is up - executing command"
